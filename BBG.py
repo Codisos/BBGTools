@@ -1,0 +1,664 @@
+
+bl_info = {
+    "name": "BBG Tools",
+    "description": "BBG Tools",
+    "author": "BBG",
+    "version": (0, 0, 4),
+    "blender": (4, 2, 0),
+    #"category": "Object",
+    "location": "VIEW_3D",
+}
+
+
+import bpy
+import re
+import math
+
+
+#---------------------------------------------------
+# COLLIDER MATERIAL NAME
+#---------------------------------------------------
+
+ColliderMaterial_name = "COL_DEFAULT"
+
+#---------------------------------------------------
+# Guidelines TEXT
+#---------------------------------------------------
+GUIDELINES_TEXT_DATA = """------------------ Models ------------------
+RULE:
+    HOMEDIR_ModelName_SCOPE
+SCOPE
+        UN(Universal)   Use this as default.
+        PA(Past)
+        PR(Present)	
+EXAMPLES:
+        STREET_WallPaint_UN.fbx
+        STREET_PastStuff_PA.fbx
+        STREET_PresentStuff_PR.fbx
+        GEN_Barrel_UN.fbx
+        GEN_Barrel_PA.fbx
+
+------------------ Materials ---------------
+RULE:
+    HOMEDIR_MaterialName_AUTHOR
+
+PROTOTYPE RULE:
+    MaterialName_PROTOTYPE
+
+EXAMPLES:
+    STREET_WallPaint_JK
+    Wall_PROTOTYPE
+    GEN_Barrel_JK
+
+------------------ Textures ----------------
+RULE:
+    CHAPTER_TextureName_AUTHOR_TEXTURETYPE
+
+PROTOTYPE RULE:
+    TextureName_PROTOTYPE
+
+TEXTURE _S:
+    R (Metallic)
+    G (Height)
+    B (AO)
+    A (Glossiness)
+
+EXAMPLES:
+    STREET_WallPaint_JK_A.tga
+    Wall_PROTOTYPE.tga
+    GEN_Barrel_JK_S.tga
+
+------------------ Animations --------------
+RULE:
+    ANI_HOMEDIR_ModelName_SCOPE_XXX1
+
+EXAMPLES: 
+    ANI_STREET_Barrel_UN_XXX1.fbx
+    ANI_STREET_Barrel_UN_XXX2.fbx
+    ANI_GEN_House_UN_XXX1.fbx
+    
+-------------- PLACEHOLDERS ----------------
+RULE Name in hierachy: 
+    PH_ModelNameWithoutScope_XXX1
+
+EXAMPLE:
+Given model with name:
+    STREET_Rock_UN
+It will be instanced under:
+    PH_STREET_Rock
+If we need multiple objects on the same level:
+    PH_STREET_Rock_XXX1
+    PH_STREET_Rock_XXX2
+    PH_STREET_Rock_XXX3
+"""
+
+#---------------------------------------------------
+# Guidelines
+#---------------------------------------------------    
+    
+class VIEW3D_PT_CustomPanel(bpy.types.Panel):
+    """Creates a Panel in the 3D View Sidebar"""
+    bl_label = "BBG VR Guidelines"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    #bl_context = "object"
+    bl_category = 'BBG'
+    bl_options = {"HEADER_LAYOUT_EXPAND"}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("wm.open_custom_text_window", text="Open Guidelines", icon='TEXT')
+        
+# Operator to Open the Custom Window
+class TEXT_OT_OpenCustomWindow(bpy.types.Operator):
+    """Open a window with guidelines"""
+    bl_idname = "wm.open_custom_text_window"
+    bl_label = "Open Text Window"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    text_data: bpy.props.StringProperty(name="Text Data", default="")
+
+    def execute(self, context):
+        self.text_data = GUIDELINES_TEXT_DATA
+        
+        context.window_manager.text_window_text = self.text_data  # Store for UI
+        bpy.ops.wm.custom_text_popup('INVOKE_DEFAULT')
+        return {'FINISHED'}
+
+# Pop-up Window Class
+class TEXT_OT_CustomTextPopup(bpy.types.Operator):
+    """Custom floating window for displaying text"""
+    bl_idname = "wm.custom_text_popup"
+    bl_label = "BBG VR GUIDELINES"
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def draw(self, context):
+        layout = self.layout
+        
+        # Display each line separately
+        for line in GUIDELINES_TEXT_DATA.split("\n"):
+            layout.label(text=line)  
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=300)
+
+
+# Register
+def GuidelinesRegister():
+    bpy.utils.register_class(TEXT_OT_OpenCustomWindow)
+    bpy.utils.register_class(TEXT_OT_CustomTextPopup)
+    bpy.utils.register_class(VIEW3D_PT_CustomPanel)
+    bpy.types.WindowManager.text_window_text = bpy.props.StringProperty(name="Text Window Data", default="")
+
+def GuidelinesUnregister():
+    bpy.utils.unregister_class(TEXT_OT_OpenCustomWindow)
+    bpy.utils.unregister_class(TEXT_OT_CustomTextPopup)
+    bpy.utils.unregister_class(VIEW3D_PT_CustomPanel)
+
+    del bpy.types.WindowManager.text_window_text
+#---------------------------------------------------
+# /Guidelines
+#---------------------------------------------------
+
+
+
+#---------------------------------------------------
+# Checks
+#---------------------------------------------------
+class CheckPanel(bpy.types.Panel):
+    bl_label = "Checks"
+    bl_idname = "scale_check"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    #bl_context = "object"
+    bl_category = 'BBG'
+    bl_options = {"DEFAULT_CLOSED"}
+     
+    def draw(self, context):
+        layout = self.layout
+        
+        #SCALES BOX
+        boxScale = layout.box()
+        boxScale.label(text="SCALE")
+        rowScale = boxScale.row()  
+        rowScale.operator("object.check_scales", text="Check Scales")
+        rowScale.operator("object.fix_scales", text="Fix Scales")
+        
+        #NORMALS BOX
+        boxNormal = layout.box()
+        boxNormal.label(text="NORMALS")
+        rowNormal = boxNormal.row()  
+        rowNormal.label(text="Check")#oznaci vsechny objekty s chybnymi normals
+        rowNormal.label(text="Fix")
+        
+        #MATERIALS BOX
+        boxMaterials = layout.box()
+        boxMaterials.label(text="MATERIALS")
+        boxMaterials.row().prop(context.scene, "include_name_MATERIAL", text="Include \"Material\"")
+        rowMaterials = boxMaterials.row()  
+        rowMaterials.operator("wm.clean_materials", text="Clean Materials")
+        rowMaterials.label(text="Check Textures")
+        
+        #PIVOT BOX
+        boxPivot = layout.box()
+        rowPivot = boxPivot.row()  
+        rowPivot.label(text="CheckPivot")
+        rowPivot.label(text="FixPivot")
+        
+        #Final check
+        layout.label(text="FINAL CHECK BUTTON")
+        #kontrola skoro vseho nahore a k tomu: material check nazvu
+
+#---------------------------------------------------
+# /Checks
+#---------------------------------------------------
+
+
+#---------------------------------------------------
+# Scale Checks
+#---------------------------------------------------
+class CheckScalesOperator(bpy.types.Operator):
+    """Checks objects for (1,1,1) scale in 'Export' collection"""
+    bl_idname = "object.check_scales"
+    bl_label = "Check Scales"
+
+    def execute(self, context):
+        collection = bpy.data.collections.get("Export")
+
+        if collection is None:
+            self.report({'ERROR'}, "Collection 'Export' not found")
+            self.show_popup("Error: Collection 'Export' not found", icon='ERROR')
+            return {'CANCELLED'}
+
+        # Get all objects recursively
+        objects_with_non_default_scales = []
+        checked_objects = set()  # To keep track of objects we've already checked
+        self.get_objects_recursive(collection, objects_with_non_default_scales, checked_objects)
+
+        if objects_with_non_default_scales:
+            obj_names = "\n".join(objects_with_non_default_scales)
+            self.report({'WARNING'}, f"Objects with scale errors:\n{obj_names}")
+            self.show_popup(f"Objects scale error. SEE CONSOLE", icon='ERROR')
+        else:
+            self.report({'INFO'}, "✅ SCALES OK")
+            self.show_popup("SCALES OK!", icon='CHECKMARK')
+
+        return {'FINISHED'}
+
+    def get_objects_recursive(self, collection, objects_list, checked_objects):
+        """Recursively check all objects in the collection and sub-collections using effective scale"""
+        if hasattr(collection, "objects"):
+            # Check all objects in the collection
+            for obj in collection.objects:
+                if obj.name not in checked_objects:
+                    self.check_object_scale(obj, objects_list, checked_objects)
+
+        # Recursively check objects in child collections
+        for sub_collection in collection.children:
+            self.get_objects_recursive(sub_collection, objects_list, checked_objects)
+
+    def check_object_scale(self, obj, objects_list, checked_objects):
+        """Check the effective scale of an object and append if it's not 1.0"""
+        # Add object to checked list to prevent re-checking
+        checked_objects.add(obj.name)
+
+        # Get the effective scale from the world matrix
+        effective_scale = obj.matrix_world.to_scale()
+        # Check scale using isclose to avoid floating-point precision issues
+        if not (math.isclose(effective_scale.x, 1.0, rel_tol=1e-3) and
+                math.isclose(effective_scale.y, 1.0, rel_tol=1e-3) and
+                math.isclose(effective_scale.z, 1.0, rel_tol=1e-3)):
+            objects_list.append(obj.name)
+
+        # Check the object's children (if it's an empty, for example)
+        for child in obj.children:
+            if child.name not in checked_objects:
+                self.check_object_scale(child, objects_list, checked_objects)
+
+    def show_popup(self, message, icon='INFO'):
+        """Show a pop-up message in Blender UI"""
+        def draw(self, context):
+            self.layout.label(text=message, icon=icon)
+        bpy.context.window_manager.popup_menu(draw, title="Scale Check", icon=icon)
+
+class FixScalesOperator(bpy.types.Operator):
+    """Applies objects to (1,1,1) scale in 'Export' collection"""
+    bl_idname = "object.fix_scales"
+    bl_label = "Fix Scales"
+
+    def execute(self, context):
+        collection = bpy.data.collections.get("Export")
+
+        if collection is None:
+            self.report({'ERROR'}, "Collection 'Export' not found")
+            return {'CANCELLED'}
+
+        # Get all objects recursively and fix their scales
+        checked_objects = set()
+        objects_with_non_default_scales = []
+        self.fix_scales_recursive(collection, objects_with_non_default_scales, checked_objects)
+
+        if objects_with_non_default_scales:
+            # Report the objects that had their scale fixed
+            obj_names = "\n".join(objects_with_non_default_scales)
+            self.report({'INFO'}, f"Scales fixed for the following objects:\n{obj_names}")
+        else:
+            self.report({'INFO'}, "✅ No objects needed fixing")
+
+        return {'FINISHED'}
+
+    def fix_scales_recursive(self, collection, objects_list, checked_objects):
+        """Recursively fix the scale of all objects in the collection and sub-collections"""
+        if hasattr(collection, "objects"):
+            for obj in collection.objects:
+                if obj.name not in checked_objects:
+                    self.fix_object_scale(obj, objects_list, checked_objects)
+
+        # Recursively fix objects in child collections
+        for sub_collection in collection.children:
+            self.fix_scales_recursive(sub_collection, objects_list, checked_objects)
+
+    def fix_object_scale(self, obj, objects_list, checked_objects):
+        """Fix the scale of an object to (1,1,1) if it's not already"""
+        # Add object to checked list to prevent re-checking
+        checked_objects.add(obj.name)
+
+        # Get the effective scale from the world matrix
+        effective_scale = obj.matrix_world.to_scale()
+        
+        # If scale is not (1, 1, 1), fix it
+        if not (math.isclose(effective_scale.x, 1.0, rel_tol=1e-3) and
+                math.isclose(effective_scale.y, 1.0, rel_tol=1e-3) and
+                math.isclose(effective_scale.z, 1.0, rel_tol=1e-3)):
+            obj.scale = (1.0, 1.0, 1.0)
+            obj.matrix_world = obj.matrix_world  # Refresh the world matrix
+            objects_list.append(obj.name)  # Add to list of fixed objects
+
+        # Check and fix the object's children
+        for child in obj.children:
+            if child.name not in checked_objects:
+                self.fix_object_scale(child, objects_list, checked_objects)
+                
+def ChecksRegister():
+    bpy.utils.register_class(CheckScalesOperator)
+    bpy.utils.register_class(FixScalesOperator)
+    bpy.utils.register_class(CheckPanel)
+    
+def ChecksUnregister():
+    bpy.utils.unregister_class(CheckScalesOperator)
+    bpy.utils.unregister_class(FixScalesOperator)
+    bpy.utils.unregister_class(CheckPanel)
+
+#---------------------------------------------------
+# /Scale Checks
+#---------------------------------------------------
+
+
+
+#---------------------------------------------------
+# UVMapsRename
+#---------------------------------------------------
+#Renames UV Maps of the currently selected objects
+
+class UVMapsRenamePanel(bpy.types.Panel):
+    bl_label = "UV Maps Rename"
+    #bl_idname = "uv_maps_rename"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    #bl_context = "data"
+    bl_category = 'BBG'
+    bl_options = {"DEFAULT_CLOSED"}
+    
+        
+    def draw(self, context):
+        layout = self.layout
+        ui = layout.column_flow(columns=2, align=False)
+        ui.prop(context.scene, "UVMaps_new_name", text="")
+        ui.operator("wm.uv_maps_rename", text="UV Maps Rename")
+
+
+class UVMapsRename(bpy.types.Operator):
+    bl_label = "UV Maps Rename"
+    bl_idname = "wm.uv_maps_rename"
+    #bl_idname = "object.uv_maps_rename"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    #bl_context = "data"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_category = 'BBG'
+    
+    
+    def execute(self, context):
+        newName = context.scene.UVMaps_new_name
+        for obj in bpy.context.selected_objects:
+            if hasattr(obj, "data"):
+                if hasattr(obj.data, "uv_layers"):
+                    for uvmap in obj.data.uv_layers:
+                        uvmap.name = newName
+        return {'FINISHED'}
+
+
+def UVMapsRenameRegister():
+    bpy.utils.register_class(UVMapsRenamePanel)
+    bpy.utils.register_class(UVMapsRename)
+
+    bpy.types.Scene.UVMaps_new_name = bpy.props.StringProperty \
+    (
+        name = "UVMaps_new_name",
+        description = "",
+        default = "UVMap"
+    )
+
+def UVMapsRenameUnregister():
+    bpy.utils.unregister_class(UVMapsRenamePanel)
+    bpy.utils.unregister_class(UVMapsRename)
+
+    del bpy.types.Scene.UVMaps_new_name
+
+#---------------------------------------------------
+# /UVMapsRename
+#---------------------------------------------------
+
+
+#---------------------------------------------------
+# MergeAnimations
+#---------------------------------------------------
+#Moves animation_data.action from Animations to Target with the same name, ignoring the .00x suffix. 
+#must import re
+
+class MergeAnimationsPanel(bpy.types.Panel):
+    bl_label = "Merge Animations"
+    bl_idname = "merge_animations"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    #bl_context = "object"
+    bl_category = 'BBG'
+    bl_options = {"DEFAULT_CLOSED"}
+    
+    
+    def draw(self, context):
+        box = self.layout.box()
+        box.prop(context.scene, "target", text="Target")
+        box.prop(context.scene, "animations", text="Animations")
+        box.operator("wm.merge_animations", text="Move Animations to Target")
+
+
+class MergeAnimations(bpy.types.Operator):
+    """Move Animations to Target"""
+    bl_label = "Merge Animations"
+    bl_idname = "wm.merge_animations"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    #bl_context = "object"
+    bl_category = 'BBG'
+    bl_options = {'REGISTER', 'UNDO'}
+
+
+    def execute(self, context):
+        targetsParent = context.scene.target
+        animationsParent = context.scene.animations
+
+        isNone = False
+        if targetsParent is None:
+            print("Target is None. ")
+            isNone = True
+        if animationsParent is None:
+            print("Animations is None. ")
+            isNone = True
+        if isNone:            
+            return {'FINISHED'}
+        
+        context.scene.animations = None
+
+        targets = [targetsParent]
+        stack = [targetsParent]
+        while stack:
+            current = stack.pop()
+            targets.append(current)
+            for child in current.children:
+                stack.append(child)
+
+        animations = [animationsParent]
+        stack = [animationsParent]
+        while stack:
+            current = stack.pop()
+            animations.append(current)
+            for child in current.children:
+                stack.append(child)
+
+        rex = r"\.\d+$"
+        for ani in animations:
+            if ani.animation_data is not None:
+                found = False
+
+                aniName = ani.name
+                if len(aniName) > 4:
+                    if re.match(rex, aniName[-4:]):
+                        aniName = aniName[:-4]
+
+                for tar in targets:
+                    tarName = tar.name
+                    if len(tarName) > 4:
+                        if re.match(rex, tarName[-4:]):
+                            tarName = tarName[:-4]
+
+                    if aniName == tarName:
+                        found = True
+                        tar.animation_data_create()
+                        tar.animation_data.action = ani.animation_data.action
+                        break
+                
+                if found:
+                    continue
+                else:
+                    print("Merge Animations: Object with animation \"" + aniName + "\" has no match in objects without animation. ")
+
+
+        bpy.ops.object.select_all(action='DESELECT')
+        for ani in animations:
+            ani.select_set(True)
+        bpy.ops.object.delete(use_global=False, confirm=False)
+
+        return {'FINISHED'}
+
+
+def MergeAnimationsRegister():
+    bpy.utils.register_class(MergeAnimationsPanel)
+    bpy.utils.register_class(MergeAnimations)
+
+    bpy.types.Scene.target = bpy.props.PointerProperty(type=bpy.types.Object)
+    bpy.types.Scene.animations = bpy.props.PointerProperty(type=bpy.types.Object)
+
+def MergeAnimationsUnregister():
+    bpy.utils.unregister_class(MergeAnimationsPanel)
+    bpy.utils.unregister_class(MergeAnimations)
+
+    del bpy.types.Scene.target
+    del bpy.types.Scene.animations
+
+#---------------------------------------------------
+# /MergeAnimations
+#---------------------------------------------------
+
+
+#---------------------------------------------------
+# CleanMaterials
+#---------------------------------------------------
+#On all objects, cleans materials with the same name. Remove Collider Tools material
+#must import re
+
+class CleanMaterials(bpy.types.Operator):
+    """Remove material duplicates and COL material"""
+    bl_label = "Clean Materials"
+    bl_idname = "wm.clean_materials"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    #bl_context = "material"
+    bl_category = 'BBG'
+    bl_options = {'REGISTER', 'UNDO'}
+
+
+    def execute(self, context):
+        include_name_MATERIAL = context.scene.include_name_MATERIAL
+        MATERIAL_name = "Material"
+        
+        allMaterials = {}
+        rex = r"\.\d+$"
+        cleanMaterials = []
+        dirtyMaterials = []
+
+        for obj in bpy.data.objects:
+            if obj.type == 'MESH':
+                for slot in obj.material_slots:
+                    if slot.material:
+                        if slot.material.name == ColliderMaterial_name:
+                            obj.data.materials.clear()
+                        else:
+                            if slot.material not in allMaterials:
+                                allMaterials[slot.material] = []
+                            allMaterials[slot.material].append(obj)
+
+        for mat, objects in allMaterials.items():
+            if len(mat.name) > 4:
+                if re.match(rex, mat.name[-4:]):
+                    if include_name_MATERIAL:
+                        dirtyMaterials.append(mat)
+                    else:
+                        if mat.name[:-4] == MATERIAL_name:
+                            cleanMaterials.append(mat)
+                        else:
+                            dirtyMaterials.append(mat)
+                else:
+                    cleanMaterials.append(mat)
+            else:
+                cleanMaterials.append(mat)
+
+        for dirtyMat in dirtyMaterials:
+            found = False
+            for cleanMat in cleanMaterials:
+                if dirtyMat.name[:-4] == cleanMat.name:
+                    found = True
+                    break
+            if not found:
+                dirtyMat.name = dirtyMat.name[:-4]
+                cleanMaterials.append(dirtyMat)
+                
+        for mat, objects in allMaterials.items():
+            if mat not in cleanMaterials:
+                for cleanMat in cleanMaterials:
+                    if mat.name[:-4] == cleanMat.name:
+                        for obj in objects:
+                            for slot in obj.material_slots:
+                                if slot.material == mat:
+                                    slot.material = cleanMat
+                        break
+
+        for mat in bpy.data.materials:
+            if mat not in cleanMaterials:
+                bpy.data.materials.remove(mat)
+
+        return {'FINISHED'}
+
+
+def CleanMaterialsRegister():
+    bpy.utils.register_class(CleanMaterials)
+
+    bpy.types.Scene.include_name_MATERIAL = bpy.props.BoolProperty(name="include_name_MATERIAL", default=True)
+
+def CleanMaterialsUnregister():
+    bpy.utils.unregister_class(CleanMaterials)
+
+    del bpy.types.Scene.include_name_MATERIAL
+
+#---------------------------------------------------
+# /CleanMaterials
+#---------------------------------------------------
+
+
+#---------------------------------------------------
+# LOD
+#---------------------------------------------------
+
+
+#---------------------------------------------------
+# /LOD
+#---------------------------------------------------
+
+def register():
+    GuidelinesRegister()
+    ChecksRegister()
+    UVMapsRenameRegister()
+    MergeAnimationsRegister()
+    CleanMaterialsRegister()
+
+def unregister():
+    GuidelinesUnregister()
+    ChecksUnregister()
+    UVMapsRenameUnregister()
+    MergeAnimationsUnregister()
+    CleanMaterialsUnregister()
+
+if __name__ == "__main__":
+    register()
