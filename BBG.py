@@ -15,6 +15,8 @@ import re
 import math
 
 
+
+
 #---------------------------------------------------
 # COLLIDER MATERIAL NAME
 #---------------------------------------------------
@@ -199,7 +201,7 @@ class CheckPanel(bpy.types.Panel):
         boxMaterials.row().prop(context.scene, "include_name_MATERIAL", text="Include \"Material\"")
         rowMaterials = boxMaterials.row()  
         rowMaterials.operator("wm.clean_materials", text="Clean Materials")
-        rowMaterials.label(text="Check Textures")
+        rowMaterials.label(text="Format Check")
         
         #PIVOT BOX
         boxPivot = layout.box()
@@ -213,6 +215,45 @@ class CheckPanel(bpy.types.Panel):
 
 #---------------------------------------------------
 # /Checks
+#---------------------------------------------------
+
+
+#---------------------------------------------------
+# Export Check (Custom Export)
+#---------------------------------------------------
+# Adds a custom Export FBX button and checks basic stuff (Root,Scale,Format)
+class ExportFBXWithChecks(bpy.types.Operator):
+    """Custom FBX Export"""
+    bl_idname = "export_scene.fbx_with_count"
+    bl_label = "Export FBX with Count"
+
+    def execute(self, context):
+        
+        #-------Run All Checks----------
+        # RootCheck
+        # FormatCheck (TexMatMatch, MatName)
+        # ScaleCheck
+        
+        
+        # Call the default FBX export operator
+        bpy.ops.export_scene.fbx('INVOKE_DEFAULT')
+
+        return {'FINISHED'}
+
+# Modify the existing Export menu to include BBG operator
+def menu_func_export(self, context):
+    self.layout.operator(ExportFBXWithChecks.bl_idname, text="FBX BBG")
+
+def ExportWithChecksRegister():
+    bpy.utils.register_class(ExportFBXWithChecks)
+    bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
+    
+def ExportWithChecksUnregister():
+    bpy.utils.unregister_class(ExportFBXWithChecks)
+    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+
+#---------------------------------------------------
+# /Export Check (Custom Export)
 #---------------------------------------------------
 
 
@@ -355,6 +396,26 @@ def ChecksUnregister():
 # /Scale Checks
 #---------------------------------------------------
 
+
+#---------------------------------------------------
+# Format Check
+#---------------------------------------------------
+
+
+
+#---------------------------------------------------
+# /Format Check
+#---------------------------------------------------
+
+#---------------------------------------------------
+# Root Check
+#---------------------------------------------------
+
+
+
+#---------------------------------------------------
+# /Root Check
+#---------------------------------------------------
 
 
 #---------------------------------------------------
@@ -815,6 +876,7 @@ def LodUnregister():
 #---------------------------------------------------
 
 def register():
+    ExportWithChecksRegister()
     GuidelinesRegister()
     ChecksRegister()
     UVMapsRenameRegister()
@@ -823,6 +885,7 @@ def register():
     LodRegister()
 
 def unregister():
+    ExportWithChecksUnregister()
     GuidelinesUnregister()
     ChecksUnregister()
     UVMapsRenameUnregister()
