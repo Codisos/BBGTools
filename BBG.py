@@ -3,7 +3,7 @@ bl_info = {
     "name": "BBG Tools",
     "description": "BBG Tools",
     "author": "BBG",
-    "version": (0, 0, 4),
+    "version": (0, 0, 5),
     "blender": (4, 2, 0),
     #"category": "Object",
     "location": "VIEW_3D",
