@@ -640,7 +640,175 @@ def CleanMaterialsUnregister():
 #---------------------------------------------------
 # LOD
 #---------------------------------------------------
+class LODObjectPickerPanel(bpy.types.Panel):
+    """Creates a Panel in the Object properties window"""
+    bl_label = "Add LODs"
+    bl_idname = "OBJECT_PT_add_lod_suffix"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'BBG'
 
+    def draw(self, context):
+        layout = self.layout
+
+        # Object picker UI
+        layout.prop(context.scene, "lod_target", text="Target")
+        
+        # Number of LODs input
+        layout.prop(context.scene, "num_lods", text="Number of LODs")
+        
+        # Decimate checkbox
+        layout.prop(context.scene, "apply_decimate", text="Decimate")
+        """Add Decimate modifier LODs"""
+
+        # Button to run the operator to add LODs
+        layout.operator("object.add_lod_suffix")
+
+        # Button to remove objects with _OLD suffix
+        layout.operator("object.remove_old_objects")
+
+class AddLODSuffix(bpy.types.Operator):
+    """Add _LODs to target object"""
+    bl_idname = "object.add_lod_suffix"
+    bl_label = "Add LODs"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        selected_object = context.scene.lod_target
+        num_lods = context.scene.num_lods
+        apply_decimate = context.scene.apply_decimate
+
+        if not selected_object:
+            self.report({'ERROR'}, "No object selected!")
+            return {'CANCELLED'}
+        
+        if num_lods < 1:
+            self.report({'ERROR'}, "Number of LODs must be at least 1!")
+            return {'CANCELLED'}
+
+        # Create an empty object with the same rotation and location as the original object
+        def create_empty_for_object(obj):
+            empty = bpy.data.objects.new(obj.name + "_LOD_Empty", None)  # Name with _LOD_Empty
+            bpy.context.scene.cursor.location = obj.location
+            empty.location = bpy.context.scene.cursor.location
+            empty.rotation_euler = obj.rotation_euler
+            empty.parent = obj.parent
+            if empty.parent:
+                empty.matrix_parent_inverse = empty.parent.matrix_world.inverted()
+            bpy.context.collection.objects.link(empty)  # Link empty to the collection
+            return empty
+
+        # Transfer mesh data-block from _OLD object to _LOD0 object
+        def transfer_mesh_data_block(original_obj, lod0_obj):
+            lod0_obj.data = original_obj.data  # Directly reference the mesh data-block of the _OLD object
+        
+        # Set location and rotation of new LOD
+        def set_lod_locpos(obj):
+            obj.location = (0,0,0)
+            obj.rotation_euler = (0,0,0)
+        
+        # Recursively add LOD suffix or duplicate meshes
+        def add_suffix_to_mesh(obj):
+            if obj.type == 'MESH' and '_COL_' not in obj.name:
+                # Create an empty for the original object
+                empty = create_empty_for_object(obj)
+
+                # Rename original object if number of LODs is 1
+                if num_lods == 1:
+                    if not obj.name.endswith('_LOD0'):
+                        obj.name = obj.name + '_LOD0'
+                    obj.parent = empty
+                    obj.matrix_parent_inverse = empty.matrix_world.inverted()
+                    set_lod_locpos(obj)
+                else:
+                    # Duplicate object and rename with _LODx suffix
+                    for i in range(num_lods):
+                        new_obj = obj.copy()
+                        new_obj.data = obj.data.copy()  # Duplicate mesh data for LODs
+                        new_obj.name = obj.name + f'_LOD{i}'
+                        bpy.context.collection.objects.link(new_obj)  # Link the new object to the same collection
+                        # Parent LOD duplicates to the empty with "Keep Transform"
+                        new_obj.parent = empty
+                        new_obj.matrix_parent_inverse = empty.matrix_world.inverted()
+                        set_lod_locpos(new_obj)
+                        
+                        # Apply Decimate modifier based on LOD level if checkbox is checked
+                        if apply_decimate and '_LOD' in new_obj.name:
+                            if i == 1:
+                                decimate_modifier = new_obj.modifiers.new(name="Decimate", type='DECIMATE')
+                                decimate_modifier.ratio = 0.7  # 0.7 for LOD1
+                            elif i > 1:
+                                decimate_modifier = new_obj.modifiers.new(name="Decimate", type='DECIMATE')
+                                decimate_modifier.ratio = 0.4  # 0.4 for LOD2 and beyond
+
+                        # If it's LOD0, transfer the original mesh data-block from _OLD object
+                        if i == 0:
+                            transfer_mesh_data_block(obj, new_obj)
+
+                # Add _OLD suffix to the original object
+                if not obj.name.endswith('_OLD') and not num_lods == 1:
+                    obj.name = obj.name + '_OLD'
+
+                # Remove _LOD_Empty suffix from the empty
+                if empty.name.endswith('_LOD_Empty'):
+                    empty.name = empty.name[:-len('_LOD_Empty')]
+
+            # Recursively apply to children
+            for child in obj.children:
+                add_suffix_to_mesh(child)
+
+        add_suffix_to_mesh(selected_object)
+
+        return {'FINISHED'}
+
+class RemoveOldObjects(bpy.types.Operator):
+    """Remove all objects with _OLD suffix under Target"""
+    bl_idname = "object.remove_old_objects"
+    bl_label = "Remove _OLD"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        selected_object = context.scene.lod_target
+        
+        if not selected_object:
+            self.report({'ERROR'}, "No object selected!")
+            return {'CANCELLED'}
+
+        # Collect objects to delete
+        def collect_old_objects(obj):
+            objects_to_delete = []
+            if obj.name.endswith('_OLD'):
+                objects_to_delete.append(obj)
+            for child in obj.children:
+                objects_to_delete.extend(collect_old_objects(child))
+            return objects_to_delete
+
+        objects_to_delete = collect_old_objects(selected_object)
+
+        # Delete objects
+        for obj in objects_to_delete:
+            bpy.data.objects.remove(obj)
+
+        self.report({'INFO'}, f"Removed {len(objects_to_delete)} objects with _OLD suffix.")
+        return {'FINISHED'}
+
+
+
+def LodRegister():
+    bpy.utils.register_class(AddLODSuffix)
+    bpy.utils.register_class(RemoveOldObjects)
+    bpy.utils.register_class(LODObjectPickerPanel)
+    bpy.types.Scene.lod_target = bpy.props.PointerProperty(type=bpy.types.Object)
+    bpy.types.Scene.num_lods = bpy.props.IntProperty(name="Number of LODs", default=2, min=1)
+    bpy.types.Scene.apply_decimate = bpy.props.BoolProperty(name="Decimate", default=False)
+
+def LodUnregister():
+    bpy.utils.unregister_class(AddLODSuffix)
+    bpy.utils.unregister_class(RemoveOldObjects)
+    bpy.utils.unregister_class(LODObjectPickerPanel)
+    del bpy.types.Scene.lod_target
+    del bpy.types.Scene.num_lods
+    del bpy.types.Scene.apply_decimate
 
 #---------------------------------------------------
 # /LOD
@@ -652,6 +820,7 @@ def register():
     UVMapsRenameRegister()
     MergeAnimationsRegister()
     CleanMaterialsRegister()
+    LodRegister()
 
 def unregister():
     GuidelinesUnregister()
@@ -659,6 +828,8 @@ def unregister():
     UVMapsRenameUnregister()
     MergeAnimationsUnregister()
     CleanMaterialsUnregister()
+    LodUnregister()
+
 
 if __name__ == "__main__":
     register()
