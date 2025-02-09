@@ -238,14 +238,14 @@ class ExportFBXWithChecks(bpy.types.Operator):
         
         # RootCheck
         if object_root_check():
-            check_messages.append("ROOT OK!")
+            check_messages.append("ROOT")
             check_icons.append('CHECKMARK')
         else:
-            check_messages.append("ROOT ERROR!")
+            check_messages.append("ROOT")
             check_icons.append('ERROR')
             
             
-        # FormatCheck (TexMatMatch, MatName)
+        # FormatCheck-"MATERIALS" (TexMatMatch, MatName, Duplicates, COL)
         
         
         
@@ -257,10 +257,10 @@ class ExportFBXWithChecks(bpy.types.Operator):
             return {'CANCELLED'}
 
         if objects:
-            check_messages.append("SCALES ERROR!")
+            check_messages.append("SCALES")
             check_icons.append('ERROR')
         else:
-            check_messages.append("SCALES OK!")
+            check_messages.append("SCALES")
             check_icons.append('CHECKMARK')
         
         
@@ -314,7 +314,7 @@ class CheckScalesOperator(bpy.types.Operator):
             return {'CANCELLED'}
 
 
-        if get_objects_recursive is None:
+        if objects:
             self.report({'WARNING'}, f"Objects with scale errors:\n" + "\n".join(objects))
             self.show_popup(f"Objects scale error. SEE CONSOLE", icon='ERROR')
         else:
@@ -331,7 +331,7 @@ class CheckScalesOperator(bpy.types.Operator):
             
 
 def get_objects_recursive(collection_name):
-    """Returns a list of object names that don't have scale (1,1,1) in the given collection"""
+    """Returns a list of object names that don't have scale (1,1,1)"""
     collection = bpy.data.collections.get(collection_name)
     if collection is None:
         return None, "Collection not found"
@@ -379,9 +379,7 @@ class FixScalesOperator(bpy.types.Operator):
         self.fix_scales_recursive(collection, objects_with_non_default_scales, checked_objects)
 
         if objects_with_non_default_scales:
-            # Report the objects that had their scale fixed
-            obj_names = "\n".join(objects_with_non_default_scales)
-            self.report({'INFO'}, f"Scales fixed for the following objects:\n{obj_names}")
+            self.report({'INFO'}, f"Scales fixed")
         else:
             self.report({'INFO'}, "✅ No objects needed fixing")
 
@@ -410,9 +408,10 @@ class FixScalesOperator(bpy.types.Operator):
         if not (math.isclose(effective_scale.x, 1.0, rel_tol=1e-3) and
                 math.isclose(effective_scale.y, 1.0, rel_tol=1e-3) and
                 math.isclose(effective_scale.z, 1.0, rel_tol=1e-3)):
-            obj.scale = (1.0, 1.0, 1.0)
-            obj.matrix_world = obj.matrix_world  # Refresh the world matrix
-            objects_list.append(obj.name)  # Add to list of fixed objects
+            bpy.context.view_layer.objects.active = obj
+            obj.select_set(True)
+            bpy.ops.object.transform_apply(location=False,rotation=False,scale=True)
+            objects_list.append(obj.name)
 
         # Check and fix the object's children
         for child in obj.children:
