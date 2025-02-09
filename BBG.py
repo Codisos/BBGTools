@@ -226,19 +226,47 @@ class ExportFBXWithChecks(bpy.types.Operator):
     """Custom FBX Export"""
     bl_idname = "export_scene.fbx_with_count"
     bl_label = "Export FBX with Count"
-
+    
+    collection_name: bpy.props.StringProperty(name="Collection", default="Export")
+    
     def execute(self, context):
-        
+        check_messages= []
+        check_icons= []    
         #-------Run All Checks----------
         # RootCheck
         # FormatCheck (TexMatMatch, MatName)
+        
+        
         # ScaleCheck
-        
-        
-        # Call the default FBX export operator
-        bpy.ops.export_scene.fbx('INVOKE_DEFAULT')
+        objects, error = get_objects_recursive(self.collection_name)
 
+        if error:
+            self.report({'ERROR'}, error)
+            return {'CANCELLED'}
+
+        if objects:
+            check_messages.append("SCALES ERROR!")
+            check_icons.append('ERROR')
+        else:
+            check_messages.append("SCALES OK!")
+            check_icons.append('CHECKMARK')
+        
+        
+        # SHOW CHECK POPUP
+        self.show_popup(check_messages,check_icons)
+        
+        bpy.ops.export_scene.fbx('INVOKE_DEFAULT') 
+         
         return {'FINISHED'}
+    
+    def show_popup(self, check_messages,check_icons):
+        """Show a pop-up message in Blender UI"""
+        def draw(self, context):
+            default_icon = 'INFO'  # Use a safe default
+            for index, message in enumerate(check_messages):
+                icon = check_icons[index] if index < len(check_icons) else default_icon
+                self.layout.label(text=message, icon=icon)
+        bpy.context.window_manager.popup_menu(draw, title="Checks")
 
 # Modify the existing Export menu to include BBG operator
 def menu_func_export(self, context):
@@ -264,65 +292,62 @@ class CheckScalesOperator(bpy.types.Operator):
     """Checks objects for (1,1,1) scale in 'Export' collection"""
     bl_idname = "object.check_scales"
     bl_label = "Check Scales"
-
+    
     def execute(self, context):
-        collection = bpy.data.collections.get("Export")
+        collection_name = "Export"
+        objects, error = get_objects_recursive(collection_name)
 
-        if collection is None:
-            self.report({'ERROR'}, "Collection 'Export' not found")
-            self.show_popup("Error: Collection 'Export' not found", icon='ERROR')
+        if error:
+            self.report({'ERROR'}, error)
             return {'CANCELLED'}
 
-        # Get all objects recursively
-        objects_with_non_default_scales = []
-        checked_objects = set()  # To keep track of objects we've already checked
-        self.get_objects_recursive(collection, objects_with_non_default_scales, checked_objects)
 
-        if objects_with_non_default_scales:
-            obj_names = "\n".join(objects_with_non_default_scales)
-            self.report({'WARNING'}, f"Objects with scale errors:\n{obj_names}")
+        if get_objects_recursive:
+            self.report({'WARNING'}, f"Objects with scale errors:\n" + "\n".join(objects))
             self.show_popup(f"Objects scale error. SEE CONSOLE", icon='ERROR')
         else:
             self.report({'INFO'}, "✅ SCALES OK")
             self.show_popup("SCALES OK!", icon='CHECKMARK')
 
         return {'FINISHED'}
-
-    def get_objects_recursive(self, collection, objects_list, checked_objects):
-        """Recursively check all objects in the collection and sub-collections using effective scale"""
-        if hasattr(collection, "objects"):
-            # Check all objects in the collection
-            for obj in collection.objects:
-                if obj.name not in checked_objects:
-                    self.check_object_scale(obj, objects_list, checked_objects)
-
-        # Recursively check objects in child collections
-        for sub_collection in collection.children:
-            self.get_objects_recursive(sub_collection, objects_list, checked_objects)
-
-    def check_object_scale(self, obj, objects_list, checked_objects):
-        """Check the effective scale of an object and append if it's not 1.0"""
-        # Add object to checked list to prevent re-checking
-        checked_objects.add(obj.name)
-
-        # Get the effective scale from the world matrix
-        effective_scale = obj.matrix_world.to_scale()
-        # Check scale using isclose to avoid floating-point precision issues
-        if not (math.isclose(effective_scale.x, 1.0, rel_tol=1e-3) and
-                math.isclose(effective_scale.y, 1.0, rel_tol=1e-3) and
-                math.isclose(effective_scale.z, 1.0, rel_tol=1e-3)):
-            objects_list.append(obj.name)
-
-        # Check the object's children (if it's an empty, for example)
-        for child in obj.children:
-            if child.name not in checked_objects:
-                self.check_object_scale(child, objects_list, checked_objects)
-
+    
     def show_popup(self, message, icon='INFO'):
         """Show a pop-up message in Blender UI"""
         def draw(self, context):
             self.layout.label(text=message, icon=icon)
-        bpy.context.window_manager.popup_menu(draw, title="Scale Check", icon=icon)
+        bpy.context.window_manager.popup_menu(draw, title="Check", icon=icon)
+            
+
+def get_objects_recursive(collection_name):
+    """Returns a list of object names that don't have scale (1,1,1) in the given collection"""
+    collection = bpy.data.collections.get(collection_name)
+    if collection is None:
+        return None, "Collection not found"
+
+    objects_with_non_default_scales = []
+    checked_objects = set()
+
+    def check_object_scale(obj):
+        """Recursively check an object's scale and its children"""
+        if obj.name in checked_objects:
+            return
+        checked_objects.add(obj.name)
+
+        effective_scale = obj.matrix_world.to_scale()
+        if not (math.isclose(effective_scale.x, 1.0, rel_tol=1e-3) and
+                math.isclose(effective_scale.y, 1.0, rel_tol=1e-3) and
+                math.isclose(effective_scale.z, 1.0, rel_tol=1e-3)):
+            objects_with_non_default_scales.append(obj.name)
+
+        for child in obj.children:
+            check_object_scale(child)
+
+    for obj in collection.all_objects:
+        check_object_scale(obj)
+
+    return objects_with_non_default_scales, None  # Return the list and no error
+
+
 
 class FixScalesOperator(bpy.types.Operator):
     """Applies objects to (1,1,1) scale in 'Export' collection"""
@@ -703,7 +728,7 @@ def CleanMaterialsUnregister():
 #---------------------------------------------------
 class LODObjectPickerPanel(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
-    bl_label = "Add LODs"
+    bl_label = "LOD Creator"
     bl_idname = "OBJECT_PT_add_lod_suffix"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
