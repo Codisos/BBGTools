@@ -3,7 +3,7 @@ bl_info = {
     "name": "BBG Tools",
     "description": "BBG Tools",
     "author": "BBG",
-    "version": (0, 0, 5),
+    "version": (0, 0, 6),
     "blender": (4, 2, 0),
     #"category": "Object",
     "location": "VIEW_3D",
@@ -230,11 +230,23 @@ class ExportFBXWithChecks(bpy.types.Operator):
     collection_name: bpy.props.StringProperty(name="Collection", default="Export")
     
     def execute(self, context):
+        
         check_messages= []
         check_icons= []    
+        
         #-------Run All Checks----------
+        
         # RootCheck
+        if object_root_check():
+            check_messages.append("ROOT OK!")
+            check_icons.append('CHECKMARK')
+        else:
+            check_messages.append("ROOT ERROR!")
+            check_icons.append('ERROR')
+            
+            
         # FormatCheck (TexMatMatch, MatName)
+        
         
         
         # ScaleCheck
@@ -436,7 +448,31 @@ def ChecksUnregister():
 # Root Check
 #---------------------------------------------------
 
+def object_root_check():
+    """Check if all selected or visible objects share the same top-level parent."""
+    
+    def get_top_parent(obj):
+        """Recursively find the highest parent in the hierarchy."""
+        while obj.parent:
+            obj = obj.parent
+        return obj
+    
+    # Determine which objects to check
+    selected_objects = bpy.context.selected_objects
+    objects_to_check = selected_objects if len(selected_objects) > 1 else [obj for obj in bpy.context.view_layer.objects if obj.visible_get()]
+    
+    if not objects_to_check:
+        return True  # No objects to check, assume valid
+    
+    # Get the top-most parent of the first object
+    top_parent = get_top_parent(objects_to_check[0])
 
+    # Ensure all other objects share the same top-level parent
+    for obj in objects_to_check:
+        if get_top_parent(obj) != top_parent:
+            return False  # Found an object with a different root parent
+    
+    return True  # All objects share the same top-level parent
 
 #---------------------------------------------------
 # /Root Check
