@@ -302,7 +302,7 @@ class CheckScalesOperator(bpy.types.Operator):
             return {'CANCELLED'}
 
 
-        if get_objects_recursive:
+        if get_objects_recursive is None:
             self.report({'WARNING'}, f"Objects with scale errors:\n" + "\n".join(objects))
             self.show_popup(f"Objects scale error. SEE CONSOLE", icon='ERROR')
         else:
