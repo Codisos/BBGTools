@@ -350,6 +350,8 @@ def get_objects_recursive(collection_name):
                 math.isclose(effective_scale.y, 1.0, rel_tol=1e-3) and
                 math.isclose(effective_scale.z, 1.0, rel_tol=1e-3)):
             objects_with_non_default_scales.append(obj.name)
+            bpy.context.view_layer.objects.active = obj
+            obj.select_set(True)
 
         for child in obj.children:
             check_object_scale(child)
