@@ -13,7 +13,7 @@ bl_info = {
 import bpy
 import re
 import math
-
+import bmesh
 
 
 
@@ -188,13 +188,6 @@ class CheckPanel(bpy.types.Panel):
         rowScale.operator("object.check_scales", text="Check Scales")
         rowScale.operator("object.fix_scales", text="Fix Scales")
         
-        #NORMALS BOX
-        boxNormal = layout.box()
-        boxNormal.label(text="NORMALS")
-        rowNormal = boxNormal.row()  
-        rowNormal.label(text="Check")#oznaci vsechny objekty s chybnymi normals
-        rowNormal.label(text="Fix")
-        
         #MATERIALS BOX
         boxMaterials = layout.box()
         boxMaterials.label(text="MATERIALS")
@@ -202,6 +195,12 @@ class CheckPanel(bpy.types.Panel):
         rowMaterials = boxMaterials.row()  
         rowMaterials.operator("wm.clean_materials", text="Clean Materials")
         rowMaterials.label(text="Format Check")
+        
+        #NORMALS BOX
+        boxOther = layout.box()
+        boxOther.label(text="OTHER")
+        rowOther = boxOther.row()  
+        rowOther.operator("object.check_normals", text="Check Normals")
         
         #PIVOT BOX
         boxPivot = layout.box()
@@ -443,6 +442,86 @@ def ChecksUnregister():
 
 #---------------------------------------------------
 # /Format Check
+#---------------------------------------------------
+
+
+#---------------------------------------------------
+# Normals Check
+#---------------------------------------------------
+
+class CheckNormalsOperator(bpy.types.Operator):
+    """Check if selected objects have normal issues"""
+    bl_idname = "object.check_normals"
+    bl_label = "Check Normals"
+
+    def execute(self, context):
+        objects_to_check = self.get_objects_to_check()
+
+        if not objects_to_check:
+            self.report({'ERROR'}, "No objects to check!")
+            return {'CANCELLED'}
+
+        error_objects = []
+
+        for obj in objects_to_check:
+            if obj.type == 'MESH':  # Only check mesh objects
+                if self.has_flipped_normals(obj):
+                    error_objects.append(obj.name)
+                    bpy.context.view_layer.objects.active = obj
+                    obj.select_set(True)
+
+        # Display results
+        if error_objects:
+            self.report({'WARNING'}, f"Objects with normal issues:\n" + "\n".join(error_objects))
+            self.show_popup(f"Normal issues detected! See console.", icon='ERROR')
+        else:
+            self.report({'INFO'}, "✅ Normals OK")
+            self.show_popup("Normals OK!", icon='CHECKMARK')
+
+        return {'FINISHED'}
+
+    def get_objects_to_check(self):
+        """Get selected objects, or all visible objects if none are selected"""
+        objects = bpy.context.selected_objects
+        if not objects:
+            objects = [obj for obj in bpy.context.view_layer.objects if obj.visible_get()]
+        return objects
+
+    def has_flipped_normals(self, obj):
+        """Check if a mesh object has flipped normals"""
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        evaluated_obj = obj.evaluated_get(depsgraph)
+        mesh = evaluated_obj.to_mesh()
+
+        if mesh is None:
+            return False
+
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bm.normal_update()
+        bm.transform(obj.matrix_world)  # Apply world transform to mesh
+
+        flipped_normals = any(face.normal.z < 0 for face in bm.faces)  # Faces with negative Z normal are flipped
+
+        bm.free()
+        evaluated_obj.to_mesh_clear()
+
+        return flipped_normals
+
+    def show_popup(self, message, icon='INFO'):
+        """Show a pop-up message in Blender UI"""
+        def draw(self, context):
+            self.layout.label(text=message, icon=icon)
+        bpy.context.window_manager.popup_menu(draw, title="Normal Check", icon=icon)
+
+def NormalsRegister():
+    bpy.utils.register_class(CheckNormalsOperator)
+
+def NormalsUnregister():
+    bpy.utils.unregister_class(CheckNormalsOperator)
+
+#---------------------------------------------------
+# /Normals Check
 #---------------------------------------------------
 
 #---------------------------------------------------
@@ -941,6 +1020,7 @@ def register():
     ExportWithChecksRegister()
     GuidelinesRegister()
     ChecksRegister()
+    NormalsRegister()
     UVMapsRenameRegister()
     MergeAnimationsRegister()
     CleanMaterialsRegister()
@@ -950,6 +1030,7 @@ def unregister():
     ExportWithChecksUnregister()
     GuidelinesUnregister()
     ChecksUnregister()
+    NormalsUnregister()
     UVMapsRenameUnregister()
     MergeAnimationsUnregister()
     CleanMaterialsUnregister()
