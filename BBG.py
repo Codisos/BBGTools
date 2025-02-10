@@ -258,9 +258,16 @@ class ExportFBXWithChecks(bpy.types.Operator):
         
         
         # ScaleCheck
-        # has to be another special function, selecting the checked objs can fck up the export (if selected)
         # special func for this check, same conditions and rules like the others
-        objects, error = get_objects_recursive(self.collection_name)
+        select_bool = False
+        export_bool = True
+        
+        if len(bpy.context.selected_objects) > 1:
+            select_bool = True
+        else:
+            select_bool = False
+            
+        objects, error = get_objects_recursive(export_bool, select_bool)
 
         if error:
             self.report({'ERROR'}, error)
@@ -311,13 +318,13 @@ def ExportWithChecksUnregister():
 # Scale Checks
 #---------------------------------------------------
 class CheckScalesOperator(bpy.types.Operator):
-    """Checks objects for (1,1,1) scale in 'Export' collection"""
+    """Checks objects for (1,1,1) scale"""
     bl_idname = "object.check_scales"
     bl_label = "Check Scales"
     
     def execute(self, context):
         collection_name = "Export"
-        objects, error = get_objects_recursive(collection_name)
+        objects, error = get_objects_recursive(False, False)
 
         if error:
             self.report({'ERROR'}, error)
@@ -326,7 +333,7 @@ class CheckScalesOperator(bpy.types.Operator):
 
         if objects:
             self.report({'WARNING'}, f"Objects with scale errors:\n" + "\n".join(objects))
-            self.show_popup(f"Objects scale error. SEE CONSOLE", icon='ERROR')
+            self.show_popup(f"Object scale error. SEE CONSOLE", icon='ERROR')
         else:
             self.report({'INFO'}, "✅ SCALES OK")
             self.show_popup("SCALES OK!", icon='CHECKMARK')
@@ -340,12 +347,8 @@ class CheckScalesOperator(bpy.types.Operator):
         bpy.context.window_manager.popup_menu(draw, title="Check", icon=icon)
             
 
-def get_objects_recursive(collection_name):
+def get_objects_recursive(export_bool, select_bool):
     """Returns a list of object names that don't have scale (1,1,1)"""
-    collection = bpy.data.collections.get(collection_name)
-    if collection is None:
-        return None, "Collection not found"
-
     objects_with_non_default_scales = []
     checked_objects = set()
 
@@ -360,14 +363,17 @@ def get_objects_recursive(collection_name):
                 math.isclose(effective_scale.y, 1.0, rel_tol=1e-3) and
                 math.isclose(effective_scale.z, 1.0, rel_tol=1e-3)):
             objects_with_non_default_scales.append(obj.name)
-            bpy.context.view_layer.objects.active = obj
-            obj.select_set(True)
-
-        for child in obj.children:
-            check_object_scale(child)
-
-    for obj in collection.all_objects:
-        check_object_scale(obj)
+            if not (export_bool):
+                bpy.context.view_layer.objects.active = obj
+                obj.select_set(True)
+                
+    if not select_bool:
+        for obj in bpy.context.view_layer.objects:
+            if obj.visible_get():  # Only check visible objects
+                check_object_scale(obj)
+    else:
+        for obj in bpy.context.selected_objects:
+            check_object_scale(obj)
 
     return objects_with_non_default_scales, None  # Return the list and no error
 
