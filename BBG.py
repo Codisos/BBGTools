@@ -3,7 +3,7 @@ bl_info = {
     "name": "BBG",
     "description": "BBG Tools",
     "author": "BBG",
-    "version": (1, 0, 0),
+    "version": (1, 0, 1),
     "blender": (4, 2, 0),
     #"category": "Object",
     "location": "VIEW_3D",
@@ -234,7 +234,7 @@ class ExportFBXWithChecks(bpy.types.Operator):
             check_icons.append('CHECKMARK')
         else:
             check_messages.append("ROOT")
-            check_icons.append('ERROR')
+            check_icons.append('CANCEL')
             
             
         # FormatCheck-"MATERIALS" (MatName, Duplicates, COL)
@@ -251,7 +251,7 @@ class ExportFBXWithChecks(bpy.types.Operator):
         
         if invalid_materials:
             check_messages.append("MATERIALS")
-            check_icons.append('ERROR')
+            check_icons.append('CANCEL')
         else:
             check_messages.append("MATERIALS")
             check_icons.append('CHECKMARK')
@@ -266,7 +266,7 @@ class ExportFBXWithChecks(bpy.types.Operator):
 
         if objects:
             check_messages.append("SCALES")
-            check_icons.append('ERROR')
+            check_icons.append('CANCEL')
         else:
             check_messages.append("SCALES")
             check_icons.append('CHECKMARK')
