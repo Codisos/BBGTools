@@ -196,21 +196,14 @@ class CheckPanel(bpy.types.Panel):
         rowMaterials.operator("wm.clean_materials", text="Clean Materials")
         rowMaterials.operator("object.format_check", text="Format Check")
         
-        #NORMALS BOX
+        #OTHER BOX
         boxOther = layout.box()
         boxOther.label(text="OTHER")
         rowOther = boxOther.row()  
-        rowOther.operator("object.check_normals", text="Check Normals")
+        #rowOther.operator("object.check_normals", text="Check Normals")
         
         #PIVOT BOX
-        boxPivot = layout.box()
-        rowPivot = boxPivot.row()  
-        rowPivot.label(text="CheckPivot")
-        rowPivot.label(text="FixPivot")
-        
-        #Final check
-        layout.label(text="FINAL CHECK BUTTON")
-        #kontrola skoro vseho nahore a k tomu: material check nazvu
+
 
 #---------------------------------------------------
 # /Checks
