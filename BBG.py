@@ -194,7 +194,7 @@ class CheckPanel(bpy.types.Panel):
         boxMaterials.row().prop(context.scene, "include_name_MATERIAL", text="Include \"Material\"")
         rowMaterials = boxMaterials.row()  
         rowMaterials.operator("wm.clean_materials", text="Clean Materials")
-        rowMaterials.label(text="Format Check")
+        rowMaterials.operator("object.format_check", text="Format Check")
         
         #NORMALS BOX
         boxOther = layout.box()
@@ -244,8 +244,24 @@ class ExportFBXWithChecks(bpy.types.Operator):
             check_icons.append('ERROR')
             
             
-        # FormatCheck-"MATERIALS" (TexMatMatch, MatName, Duplicates, COL)
+        # FormatCheck-"MATERIALS" (MatName, Duplicates, COL)
+        format_objects_to_check = []
         
+        if len(context.selected_objects) > 1:
+            format_objects_to_check = context.selected_objects
+        elif len(context.selected_objects) == 1:
+            format_objects_to_check = [context.selected_objects[0]]
+        else:
+            format_objects_to_check = [obj for obj in context.visible_objects if obj.type == 'MESH']
+        
+        invalid_materials = check_material_format(format_objects_to_check)
+        
+        if invalid_materials:
+            check_messages.append("MATERIALS")
+            check_icons.append('ERROR')
+        else:
+            check_messages.append("MATERIALS")
+            check_icons.append('CHECKMARK')
         
         
         # ScaleCheck
@@ -437,7 +453,65 @@ def ChecksUnregister():
 #---------------------------------------------------
 # Format Check
 #---------------------------------------------------
+def check_material_format(objects_to_check):
+    invalid_materials = set()
+    pattern = re.compile(r'^(?:(?:PROTOTYPE_[^_]+)|(?:(?!PROTOTYPE_)[A-Z][A-Za-z0-9]*_[^_]+_[^_]+))$')
+    
+    for obj in objects_to_check:
+        if obj.material_slots:
+            for slot in obj.material_slots:
+                if slot.material:
+                    name = slot.material.name
+                    if not pattern.match(name) or "COL" in name:
+                        invalid_materials.add(name)
+    
+    return invalid_materials
 
+class FormatCheck(bpy.types.Operator):
+    """Check material name format for visible or selected objects"""
+    bl_idname = "object.format_check"
+    bl_label = "Check Material Format"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        objects_to_check = []
+        
+        if len(context.selected_objects) > 1:
+            objects_to_check = context.selected_objects
+        elif len(context.selected_objects) == 1:
+            objects_to_check = [context.selected_objects[0]]
+        else:
+            objects_to_check = [obj for obj in context.visible_objects if obj.type == 'MESH']
+        
+        invalid_materials = check_material_format(objects_to_check)
+        
+        if invalid_materials:
+            self.report({'WARNING'}, f"Invalid material names:\n" + "\n".join(invalid_materials))
+            self.show_popup("Invalid material names detected. SEE CONSOLE", icon='ERROR')
+        else:
+            self.report({'INFO'}, "✅ MATERIAL NAMES OK")
+            self.show_popup("MATERIAL NAMES OK!", icon='CHECKMARK')
+        
+        return {'FINISHED'}
+    
+    def show_popup(self, message, icon='INFO'):
+        def draw(self, context):
+            self.layout.label(text=message)
+        bpy.context.window_manager.popup_menu(draw, title="Format Check", icon=icon)
+
+
+def menu_func(self, context):
+    self.layout.operator(FormatCheck.bl_idname)
+
+
+def FormatCheckRegister():
+    bpy.utils.register_class(FormatCheck)
+    bpy.types.VIEW3D_MT_object.append(menu_func)
+
+
+def FormatCheckUnregister():
+    bpy.utils.unregister_class(FormatCheck)
+    bpy.types.VIEW3D_MT_object.remove(menu_func)
 
 
 #---------------------------------------------------
@@ -799,6 +873,7 @@ class LODObjectPickerPanel(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'BBG'
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
         layout = self.layout
@@ -970,16 +1045,19 @@ def register():
     ExportWithChecksRegister()
     GuidelinesRegister()
     ChecksRegister()
+    FormatCheckRegister()
     NormalsRegister()
     UVMapsRenameRegister()
     MergeAnimationsRegister()
     CleanMaterialsRegister()
     LodRegister()
+    
 
 def unregister():
     ExportWithChecksUnregister()
     GuidelinesUnregister()
     ChecksUnregister()
+    FormatCheckUnregister()
     NormalsUnregister()
     UVMapsRenameUnregister()
     MergeAnimationsUnregister()
