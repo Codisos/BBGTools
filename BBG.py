@@ -258,6 +258,8 @@ class ExportFBXWithChecks(bpy.types.Operator):
         
         
         # ScaleCheck
+        # has to be another special function, selecting the checked objs can fck up the export (if selected)
+        # special func for this check, same conditions and rules like the others
         objects, error = get_objects_recursive(self.collection_name)
 
         if error:
