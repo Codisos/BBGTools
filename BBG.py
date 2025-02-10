@@ -258,7 +258,6 @@ class ExportFBXWithChecks(bpy.types.Operator):
         
         
         # ScaleCheck
-        # special func for this check, same conditions and rules like the others
         select_bool = False
         export_bool = True
         
