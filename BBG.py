@@ -219,7 +219,6 @@ class ExportFBXWithChecks(bpy.types.Operator):
     bl_idname = "export_scene.fbx_with_count"
     bl_label = "Export FBX with Count"
     
-    collection_name: bpy.props.StringProperty(name="Collection", default="Export")
     
     def execute(self, context):
         
@@ -455,7 +454,7 @@ def ChecksUnregister():
 #---------------------------------------------------
 def check_material_format(objects_to_check):
     invalid_materials = set()
-    pattern = re.compile(r'^(?:(?:PROTOTYPE_[^_]+)|(?:(?!PROTOTYPE_)[A-Z][A-Za-z0-9]*_[^_]+_[^_]+))$')
+    pattern = re.compile(r'^(?:[A-Z][^_]*_PROTOTYPE|(?!.*PROTOTYPE)[A-Z]+_[^_]+_[^_]+)$')
     
     for obj in objects_to_check:
         if obj.material_slots:
