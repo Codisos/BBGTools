@@ -281,9 +281,28 @@ class ExportFBXWithChecks(bpy.types.Operator):
         
         # SHOW CHECK POPUP
         self.show_popup(check_messages,check_icons)
+       
         
-        bpy.ops.export_scene.fbx('INVOKE_DEFAULT') 
-         
+        # Run window with last export settings
+        def open_fbx_export_window():
+            wm = bpy.context.window_manager
+            last_fbx_settings = wm.operator_properties_last("export_scene.fbx")
+
+            if last_fbx_settings:
+                export_args = {}
+                for prop in last_fbx_settings.bl_rna.properties:
+                    if not prop.is_readonly and prop.identifier != "rna_type":
+                        export_args[prop.identifier] = getattr(last_fbx_settings, prop.identifier)
+
+                # Open the export window with stored settings
+                bpy.ops.export_scene.fbx('INVOKE_DEFAULT', **export_args)
+            
+            else:
+                bpy.ops.export_scene.fbx('INVOKE_DEFAULT')
+        
+        # Run FBX export window
+        open_fbx_export_window()
+        
         return {'FINISHED'}
     
     def show_popup(self, check_messages,check_icons):
@@ -294,6 +313,7 @@ class ExportFBXWithChecks(bpy.types.Operator):
                 icon = check_icons[index] if index < len(check_icons) else default_icon
                 self.layout.label(text=message, icon=icon)
         bpy.context.window_manager.popup_menu(draw, title="Checks")
+        
 
 # Modify the existing Export menu to include BBG operator
 def menu_func_export(self, context):
