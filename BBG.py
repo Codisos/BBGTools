@@ -234,6 +234,7 @@ class ExportFBXWithChecks(bpy.types.Operator):
         else:
             check_messages.append("ROOT")
             check_icons.append('CANCEL')
+            self.report({'ERROR'}, f"ROOT ERROR!!!")
             
             
         # FormatCheck-"MATERIALS" (MatName, Duplicates, COL)
@@ -251,6 +252,7 @@ class ExportFBXWithChecks(bpy.types.Operator):
         if invalid_materials:
             check_messages.append("MATERIALS")
             check_icons.append('CANCEL')
+            self.report({'ERROR'}, f"MATERIAL ERROR!!!")
         else:
             check_messages.append("MATERIALS")
             check_icons.append('CHECKMARK')
@@ -274,13 +276,15 @@ class ExportFBXWithChecks(bpy.types.Operator):
         if objects:
             check_messages.append("SCALES")
             check_icons.append('CANCEL')
+            self.report({'ERROR'}, f"SCALES ERROR!!!")
         else:
             check_messages.append("SCALES")
             check_icons.append('CHECKMARK')
         
         
         # SHOW CHECK POPUP
-        self.show_popup(check_messages,check_icons)
+        if not any('CANCEL' in icon for icon in check_icons):  
+            self.show_popup(check_messages, check_icons)
        
         
         # Run window with last export settings
