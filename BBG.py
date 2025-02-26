@@ -199,7 +199,8 @@ class CheckPanel(bpy.types.Panel):
         #OTHER BOX
         boxOther = layout.box()
         boxOther.label(text="OTHER")
-        rowOther = boxOther.row()  
+        rowOther = boxOther.row() 
+        rowOther.prop(context.scene.other_properties, "include_prototype_root", text="PROTOTYPE Export")
         #rowOther.operator("object.check_normals", text="Check Normals")
         
         #PIVOT BOX
@@ -575,14 +576,30 @@ def NormalsUnregister():
 # Root Check
 #---------------------------------------------------
 
+class OtherProperties(bpy.types.PropertyGroup):
+    include_prototype_root: bpy.props.BoolProperty(
+        name="Enable Prototype Check",
+        default=False
+    )
+
 def object_root_check():
     """Check if all selected or visible objects share the same top-level parent."""
+    
+    include_prototype_root = bpy.context.scene.other_properties.include_prototype_root
     
     def get_top_parent(obj):
         """Recursively find the highest parent in the hierarchy."""
         while obj.parent:
             obj = obj.parent
         return obj
+    
+    def make_extra_root_check(obj):
+        root_obj = get_top_parent(obj)
+        
+        if not (root_obj.location == (0.0, 0.0, 0.0) and root_obj.rotation_euler == (0.0, 0.0, 0.0)):
+            return False
+        
+        return True
     
     # Determine which objects to check
     selected_objects = bpy.context.selected_objects
@@ -599,7 +616,23 @@ def object_root_check():
         if get_top_parent(obj) != top_parent:
             return False  # Found an object with a different root parent
     
+    if include_prototype_root:    
+        if not make_extra_root_check(top_parent):
+            return False
+    
     return True  # All objects share the same top-level parent
+
+
+#TODO pridat funkci na checknuti 000 pro rotaci a pozici
+def RootCheckRegister():
+    
+    bpy.utils.register_class(OtherProperties)
+    bpy.types.Scene.other_properties = bpy.props.PointerProperty(type=OtherProperties)
+
+def RootCheckUnregister():
+
+    del bpy.types.Scene.other_properties
+    bpy.utils.unregister_class(OtherProperties)
 
 #---------------------------------------------------
 # /Root Check
@@ -811,6 +844,7 @@ class CleanMaterials(bpy.types.Operator):
 
     def execute(self, context):
         include_name_MATERIAL = context.scene.include_name_MATERIAL
+        
         MATERIAL_name = "Material"
         
         allMaterials = {}
@@ -1065,9 +1099,10 @@ def LodUnregister():
 #---------------------------------------------------
 
 def register():
+    RootCheckRegister()
     ExportWithChecksRegister()
     GuidelinesRegister()
-    ChecksRegister()
+    ChecksRegister() 
     FormatCheckRegister()
     NormalsRegister()
     UVMapsRenameRegister()
@@ -1077,6 +1112,7 @@ def register():
     
 
 def unregister():
+    RootCheckUnregister()
     ExportWithChecksUnregister()
     GuidelinesUnregister()
     ChecksUnregister()
