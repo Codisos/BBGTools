@@ -492,7 +492,7 @@ def check_material_format(objects_to_check):
     return invalid_materials
 
 class FormatCheck(bpy.types.Operator):
-    """Check material name format for visible or selected objects"""
+    """Check material name format for all visible or selected objects"""
     bl_idname = "object.format_check"
     bl_label = "Check Material Format"
     bl_options = {'REGISTER', 'UNDO'}
@@ -834,7 +834,7 @@ def MergeAnimationsUnregister():
 #must import re
 
 class CleanMaterials(bpy.types.Operator):
-    """Remove material duplicates and COL material"""
+    """Remove all material duplicates and COL materials in Scene"""
     bl_label = "Clean Materials"
     bl_idname = "wm.clean_materials"
     bl_space_type = 'VIEW_3D'
