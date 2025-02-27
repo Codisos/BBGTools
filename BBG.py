@@ -579,7 +579,7 @@ def NormalsUnregister():
 class OtherProperties(bpy.types.PropertyGroup):
     include_prototype_root: bpy.props.BoolProperty(
         name="Enable Prototype Check",
-        default=False
+        default=True
     )
 
 def object_root_check():
