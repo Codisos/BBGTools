@@ -110,6 +110,7 @@ def GuidelinesUnregister():
 #---------------------------------------------------
 # Checks
 #---------------------------------------------------
+
 class CheckPanel(bpy.types.Panel):
     bl_label = "Checks"
     bl_idname = "scale_check"
@@ -138,12 +139,17 @@ class CheckPanel(bpy.types.Panel):
         rowMaterials.operator("object.format_check", text="Format Check")
         
         #OTHER BOX
-        boxOther = layout.box()
-        boxOther.label(text="OTHER")
-        rowOther = boxOther.row() 
-        #rowOther.prop(context.scene.other_properties, "include_prototype_root", text="PROTOTYPE Export")
-        rowOther.prop(context.scene.other_properties, "export_mode_enum", text="Mode")
-        #rowOther.operator("object.check_normals", text="Check Normals")
+        other_props = context.scene.other_properties
+        layout.row().prop(other_props, "show_collapse", text="SETTINGS", icon="TRIA_DOWN" if other_props.show_collapse else "TRIA_RIGHT", emboss=False)
+
+        # Collapsible box
+        if other_props.show_collapse:
+            boxOther = layout.box()
+            rowOther = boxOther.row() 
+            #rowOther.prop(context.scene.other_properties, "include_prototype_root", text="PROTOTYPE Export")
+            rowOther.prop(context.scene.other_properties, "export_mode_enum", text="Mode")
+            boxOther.row().prop(context.scene.other_properties, "custom_collider_name", text="")
+            #rowOther.operator("object.check_normals", text="Check Normals")
         
         #PIVOT BOX
 
@@ -413,11 +419,13 @@ def ChecksRegister():
     bpy.utils.register_class(CheckScalesOperator)
     bpy.utils.register_class(FixScalesOperator)
     bpy.utils.register_class(CheckPanel)
+    bpy.types.Scene.other_props = bpy.props.PointerProperty(type=OtherProperties)
     
 def ChecksUnregister():
     bpy.utils.unregister_class(CheckScalesOperator)
     bpy.utils.unregister_class(FixScalesOperator)
     bpy.utils.unregister_class(CheckPanel)
+    del bpy.types.Scene.other_props
 
 #---------------------------------------------------
 # /Scale Checks
@@ -542,6 +550,15 @@ class OtherProperties(bpy.types.PropertyGroup):
         ('OP2', "PROTOTYPE", ""),
         ('OP3', "DESIGN", "")
         ]
+    )
+    custom_collider_name: bpy.props.StringProperty(
+        name = "",
+        description = "Collider material name",
+        default = "COL_DEFAULT"
+    )
+    show_collapse: bpy.props.BoolProperty(
+        name="Show Options",
+        default=False
     )
 
 def object_root_check():
@@ -813,6 +830,8 @@ class CleanMaterials(bpy.types.Operator):
 
     def execute(self, context):
         include_name_MATERIAL = context.scene.include_name_MATERIAL
+        
+        ColliderMaterial_name = bpy.context.scene.other_properties.custom_collider_name
         
         MATERIAL_name = "Material"
         
