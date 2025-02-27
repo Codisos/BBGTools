@@ -9,12 +9,13 @@ bl_info = {
     "location": "VIEW_3D",
 }
 
-
 import bpy
 import re
 import math
 import bmesh
 import mathutils
+import pathlib
+import os
 
 
 #---------------------------------------------------
@@ -26,73 +27,15 @@ ColliderMaterial_name = "COL_DEFAULT"
 #---------------------------------------------------
 # Guidelines TEXT
 #---------------------------------------------------
-GUIDELINES_TEXT_DATA = """------------------ Models ------------------
-RULE:
-    HOMEDIR_ModelName_SCOPE
-SCOPE
-        UN(Universal)   Use this as default.
-        PA(Past)
-        PR(Present)	
-EXAMPLES:
-        STREET_WallPaint_UN.fbx
-        STREET_PastStuff_PA.fbx
-        STREET_PresentStuff_PR.fbx
-        GEN_Barrel_UN.fbx
-        GEN_Barrel_PA.fbx
 
------------------- Materials ---------------
-RULE:
-    HOMEDIR_MaterialName_AUTHOR
+script_path = __file__
+script_dir = pathlib.Path(script_path).resolve().parent
 
-PROTOTYPE RULE:
-    MaterialName_PROTOTYPE
+guidelines_file = open(os.path.join(script_dir, "guidelines.txt"), 'r')
 
-EXAMPLES:
-    STREET_WallPaint_JK
-    Wall_PROTOTYPE
-    GEN_Barrel_JK
+GUIDELINES_TEXT_DATA = guidelines_file.read()
 
------------------- Textures ----------------
-RULE:
-    CHAPTER_TextureName_AUTHOR_TEXTURETYPE
-
-PROTOTYPE RULE:
-    TextureName_PROTOTYPE
-
-TEXTURE _S:
-    R (Metallic)
-    G (Height)
-    B (AO)
-    A (Glossiness)
-
-EXAMPLES:
-    STREET_WallPaint_JK_A.tga
-    Wall_PROTOTYPE.tga
-    GEN_Barrel_JK_S.tga
-
------------------- Animations --------------
-RULE:
-    ANI_HOMEDIR_ModelName_SCOPE_XXX1
-
-EXAMPLES: 
-    ANI_STREET_Barrel_UN_XXX1.fbx
-    ANI_STREET_Barrel_UN_XXX2.fbx
-    ANI_GEN_House_UN_XXX1.fbx
-    
--------------- PLACEHOLDERS ----------------
-RULE Name in hierachy: 
-    PH_ModelNameWithoutScope_XXX1
-
-EXAMPLE:
-Given model with name:
-    STREET_Rock_UN
-It will be instanced under:
-    PH_STREET_Rock
-If we need multiple objects on the same level:
-    PH_STREET_Rock_XXX1
-    PH_STREET_Rock_XXX2
-    PH_STREET_Rock_XXX3
-"""
+guidelines_file.close()
 
 #---------------------------------------------------
 # Guidelines
@@ -110,6 +53,7 @@ class VIEW3D_PT_CustomPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         layout.operator("wm.open_custom_text_window", text="Open Guidelines", icon='TEXT')
+        
         
 # Operator to Open the Custom Window
 class TEXT_OT_OpenCustomWindow(bpy.types.Operator):
@@ -1124,7 +1068,3 @@ def unregister():
     MergeAnimationsUnregister()
     CleanMaterialsUnregister()
     LodUnregister()
-
-
-if __name__ == "__main__":
-    register()
