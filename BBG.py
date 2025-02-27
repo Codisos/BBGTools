@@ -593,13 +593,15 @@ def object_root_check():
             obj = obj.parent
         return obj
     
+    # Only if in PROTOTYPE mode
     def make_extra_root_check(obj):
-        root_obj = get_top_parent(obj)
+        root_obj = obj
         
-        if not (root_obj.location == (0.0, 0.0, 0.0) and root_obj.rotation_euler == (0.0, 0.0, 0.0)):
-            return False
-        
-        return True
+        if (root_obj.location == mathutils.Vector((0.0, 0.0, 0.0)) and
+            root_obj.rotation_euler == mathutils.Euler((0.0, 0.0, 0.0))):
+            return True
+
+        return False
     
     # Determine which objects to check
     selected_objects = bpy.context.selected_objects
@@ -616,6 +618,7 @@ def object_root_check():
         if get_top_parent(obj) != top_parent:
             return False  # Found an object with a different root parent
     
+    # If PROTOTYPE mode is checked in panel, execute
     if include_prototype_root:    
         if not make_extra_root_check(top_parent):
             return False
@@ -623,7 +626,6 @@ def object_root_check():
     return True  # All objects share the same top-level parent
 
 
-#TODO pridat funkci na checknuti 000 pro rotaci a pozici
 def RootCheckRegister():
     
     bpy.utils.register_class(OtherProperties)
