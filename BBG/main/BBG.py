@@ -19,6 +19,13 @@ ColliderMaterial_name = "COL_DEFAULT"
 #---------------------------------------------------
 
 script_path = __file__
+
+# running only if in text editor (Blender editor reasons)
+if bpy.context.space_data != None and bpy.context.space_data.type == "TEXT_EDITOR":
+    script_path = bpy.context.space_data.text.filepath
+else:
+    script_path = __file__
+
 script_dir = pathlib.Path(script_path).resolve().parent
 
 guidelines_file = open(os.path.join(script_dir, "guidelines.txt"), 'r')
@@ -134,7 +141,8 @@ class CheckPanel(bpy.types.Panel):
         boxOther = layout.box()
         boxOther.label(text="OTHER")
         rowOther = boxOther.row() 
-        rowOther.prop(context.scene.other_properties, "include_prototype_root", text="PROTOTYPE Export")
+        #rowOther.prop(context.scene.other_properties, "include_prototype_root", text="PROTOTYPE Export")
+        rowOther.prop(context.scene.other_properties, "export_mode_enum", text="Mode")
         #rowOther.operator("object.check_normals", text="Check Normals")
         
         #PIVOT BOX
@@ -157,6 +165,14 @@ class ExportFBXWithChecks(bpy.types.Operator):
     
     def execute(self, context):
         
+        # Check if not in design mode
+        active_export_mode = bpy.context.scene.other_properties.export_mode_enum
+    
+        if active_export_mode == 'OP3':
+            self.open_fbx_export_window()
+            return {'CANCELLED'}
+        
+        # messages for popup
         check_messages= []
         check_icons= []    
         
@@ -222,27 +238,27 @@ class ExportFBXWithChecks(bpy.types.Operator):
             self.show_popup(check_messages, check_icons)
        
         
-        # Run window with last export settings
-        def open_fbx_export_window():
-            wm = bpy.context.window_manager
-            last_fbx_settings = wm.operator_properties_last("export_scene.fbx")
-
-            if last_fbx_settings:
-                export_args = {}
-                for prop in last_fbx_settings.bl_rna.properties:
-                    if not prop.is_readonly and prop.identifier != "rna_type":
-                        export_args[prop.identifier] = getattr(last_fbx_settings, prop.identifier)
-
-                # Open the export window with stored settings
-                bpy.ops.export_scene.fbx('INVOKE_DEFAULT', **export_args)
-            
-            else:
-                bpy.ops.export_scene.fbx('INVOKE_DEFAULT')
-        
         # Run FBX export window
-        open_fbx_export_window()
+        self.open_fbx_export_window()
         
         return {'FINISHED'}
+    
+    # Run window with last export settings
+    def open_fbx_export_window(self):
+        wm = bpy.context.window_manager
+        last_fbx_settings = wm.operator_properties_last("export_scene.fbx")
+
+        if last_fbx_settings:
+            export_args = {}
+            for prop in last_fbx_settings.bl_rna.properties:
+                if not prop.is_readonly and prop.identifier != "rna_type":
+                    export_args[prop.identifier] = getattr(last_fbx_settings, prop.identifier)
+
+            # Open the export window with stored settings
+            bpy.ops.export_scene.fbx('INVOKE_DEFAULT', **export_args)
+        
+        else:
+            bpy.ops.export_scene.fbx('INVOKE_DEFAULT')
     
     def show_popup(self, check_messages,check_icons):
         """Show a pop-up message in Blender UI"""
@@ -511,15 +527,30 @@ def NormalsUnregister():
 #---------------------------------------------------
 
 class OtherProperties(bpy.types.PropertyGroup):
+    #keep for now, dispose of later
     include_prototype_root: bpy.props.BoolProperty(
         name="Enable Prototype Check",
         default=True
+    )
+    export_mode_enum: bpy.props.EnumProperty(
+        name="",
+        description="Select Export Mode",
+        items=[
+        ('OP1', "FINAL", ""),
+        ('OP2', "PROTOTYPE", ""),
+        ('OP3', "DESIGN", "")
+        ]
     )
 
 def object_root_check():
     """Check if all selected or visible objects share the same top-level parent."""
     
-    include_prototype_root = bpy.context.scene.other_properties.include_prototype_root
+    active_export_mode = bpy.context.scene.other_properties.export_mode_enum
+    
+    include_prototype_root = False
+    
+    if active_export_mode == 'OP2':
+        include_prototype_root = True
     
     def get_top_parent(obj):
         """Recursively find the highest parent in the hierarchy."""
