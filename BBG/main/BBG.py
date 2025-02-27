@@ -441,6 +441,8 @@ def check_material_format(objects_to_check):
     
     return invalid_materials
 
+#TODO texture name function (same rules)
+
 class FormatCheck(bpy.types.Operator):
     """Check material name format for all visible or selected objects"""
     bl_idname = "object.format_check"
@@ -1089,3 +1091,6 @@ def unregister():
     MergeAnimationsUnregister()
     CleanMaterialsUnregister()
     LodUnregister()
+    
+#if __name__ == "__main__":
+#    register()
