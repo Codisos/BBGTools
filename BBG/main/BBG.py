@@ -1,14 +1,4 @@
 
-bl_info = {
-    "name": "BBG",
-    "description": "BBG Tools",
-    "author": "BBG",
-    "version": (1, 0, 5),
-    "blender": (4, 2, 0),
-    #"category": "Object",
-    "location": "VIEW_3D",
-}
-
 import bpy
 import re
 import math
