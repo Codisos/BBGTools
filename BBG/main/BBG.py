@@ -136,7 +136,7 @@ class CheckPanel(bpy.types.Panel):
     bl_region_type = 'UI'
     #bl_context = "object"
     bl_category = 'BBG'
-    bl_options = {"DEFAULT_CLOSED"}
+    bl_options = {"HEADER_LAYOUT_EXPAND"}
      
     def draw(self, context):
         layout = self.layout
