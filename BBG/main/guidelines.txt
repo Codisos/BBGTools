@@ -1,6 +1,6 @@
 ------------------ Models ------------------
 RULE:
-    HOMEDIR_ModelName_SCOPE
+    CHAPTER_ModelName_SCOPE
 SCOPE
         UN(Universal)   Use this as default.
         PA(Past)
@@ -12,9 +12,18 @@ EXAMPLES:
         GEN_Barrel_UN.fbx
         GEN_Barrel_PA.fbx
 
+EMPTYS:
+	-helper	 (static)
+	-mover	 (movement)
+	-rotator (rotation)
+	-hinge	 (limited rotation)
+
+	-startREF(movement references)
+	-endREF
+
 ------------------ Materials ---------------
 RULE:
-    HOMEDIR_MaterialName_AUTHOR
+    CHAPTER_MaterialName_AUTHOR
 
 PROTOTYPE RULE:
     MaterialName_PROTOTYPE
