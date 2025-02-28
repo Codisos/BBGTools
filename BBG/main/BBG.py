@@ -315,11 +315,12 @@ def ExportWithChecksUnregister():
 # Scale Checks
 #---------------------------------------------------
 class CheckScalesOperator(bpy.types.Operator):
-    """Checks objects for (1,1,1) scale"""
+    """Checks scales of visible or selected objects (selects anomalies)"""
     bl_idname = "object.check_scales"
     bl_label = "Check Scales"
     
     def execute(self, context):
+        bpy.ops.object.select_all(action='DESELECT')
         collection_name = "Export"
         objects, error = get_objects_recursive(False, False)
 
