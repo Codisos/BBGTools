@@ -18,21 +18,36 @@ ColliderMaterial_name = "COL_DEFAULT"
 # Guidelines TEXT
 #---------------------------------------------------
 
-script_path = __file__
+GUIDELINES_TEXT_DATA = ""
 
-# running only if in text editor (Blender editor reasons)
-if bpy.context.space_data != None and bpy.context.space_data.type == "TEXT_EDITOR":
-    script_path = bpy.context.space_data.text.filepath
-else:
-    script_path = __file__
+class GetGuidelinesFile(bpy.types.Operator):
+    bl_idname = "wm.get_guidelines"
+    bl_label = "GetGuidelines"
 
-script_dir = pathlib.Path(script_path).resolve().parent
+    def execute(self, context):
+        global GUIDELINES_TEXT_DATA
+        
+        script_path = __file__
+        
+        # running only if in text editor (Blender editor reasons)
+        if bpy.context.space_data != None and bpy.context.space_data.type == "TEXT_EDITOR":
+            script_path = bpy.context.space_data.text.filepath
+        else:
+            script_path = __file__
+        
+        
+        script_dir = pathlib.Path(script_path).resolve().parent
 
-guidelines_file = open(os.path.join(script_dir, "guidelines.txt"), 'r')
+        guidelines_file = open(os.path.join(script_dir, "guidelines.txt"), 'r')
+        
+        print(guidelines_file)
 
-GUIDELINES_TEXT_DATA = guidelines_file.read()
+        GUIDELINES_TEXT_DATA = guidelines_file.read()
 
-guidelines_file.close()
+        guidelines_file.close()         
+            
+        return {'FINISHED'}
+
 
 #---------------------------------------------------
 # Guidelines
@@ -62,6 +77,7 @@ class TEXT_OT_OpenCustomWindow(bpy.types.Operator):
     text_data: bpy.props.StringProperty(name="Text Data", default="")
 
     def execute(self, context):
+        bpy.ops.wm.get_guidelines()
         self.text_data = GUIDELINES_TEXT_DATA
         
         context.window_manager.text_window_text = self.text_data  # Store for UI
@@ -90,12 +106,14 @@ class TEXT_OT_CustomTextPopup(bpy.types.Operator):
 
 # Register
 def GuidelinesRegister():
+    bpy.utils.register_class(GetGuidelinesFile)
     bpy.utils.register_class(TEXT_OT_OpenCustomWindow)
     bpy.utils.register_class(TEXT_OT_CustomTextPopup)
     bpy.utils.register_class(VIEW3D_PT_CustomPanel)
     bpy.types.WindowManager.text_window_text = bpy.props.StringProperty(name="Text Window Data", default="")
 
 def GuidelinesUnregister():
+    bpy.utils.unregister_class(GetGuidelinesFile)
     bpy.utils.unregister_class(TEXT_OT_OpenCustomWindow)
     bpy.utils.unregister_class(TEXT_OT_CustomTextPopup)
     bpy.utils.unregister_class(VIEW3D_PT_CustomPanel)
@@ -138,11 +156,11 @@ class CheckPanel(bpy.types.Panel):
         rowMaterials.operator("wm.clean_materials", text="Clean Materials")
         rowMaterials.operator("object.format_check", text="Format Check")
         
-        #OTHER BOX
+        #OTHER/settings BOX "header"
         other_props = context.scene.other_properties
         layout.row().prop(other_props, "show_collapse", text="SETTINGS", icon="TRIA_DOWN" if other_props.show_collapse else "TRIA_RIGHT", emboss=False)
 
-        # Collapsible box
+        # Collapsible content of OTHER/settings box
         if other_props.show_collapse:
             boxOther = layout.box()
             rowOther = boxOther.row() 
@@ -1110,6 +1128,7 @@ def unregister():
     MergeAnimationsUnregister()
     CleanMaterialsUnregister()
     LodUnregister()
-    
+
+# TURN OFF IF TESTING IN BLENDER 
 #if __name__ == "__main__":
 #    register()
