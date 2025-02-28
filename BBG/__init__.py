@@ -18,8 +18,9 @@ script_path = os.path.dirname(os.path.abspath(__file__))
 if script_path not in sys.path:
     sys.path.append(script_path)
 
+# All modules here
 module_names = [
-    ('.main.BBG', 'BBG')  # Ensure correct module path
+    ('.main.BBG', 'BBG')
 ]
 
 def register():
