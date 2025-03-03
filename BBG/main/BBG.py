@@ -166,7 +166,7 @@ class CheckPanel(bpy.types.Panel):
             rowOther = boxOther.row() 
             #rowOther.prop(context.scene.other_properties, "include_prototype_root", text="PROTOTYPE Export")
             rowOther.prop(context.scene.other_properties, "export_mode_enum", text="Mode")
-            boxOther.row().prop(context.scene.other_properties, "custom_collider_name", text="")
+            boxOther.row().prop(context.scene.other_properties, "custom_collider_name", text="Material Name")
             #rowOther.operator("object.check_normals", text="Check Normals")
         
         #PIVOT BOX
@@ -1136,10 +1136,10 @@ class LODGroupsPanel(bpy.types.Panel):
         
         # --------------------LOD0--------------------------------
         lod0Split.label(text="LOD0")
-        lod0_visible = any(obj for obj in bpy.data.objects if "_LOD0" in obj.name and not obj.hide_viewport)
+        lod0_visible = any(obj for obj in bpy.data.objects if "_LOD0" in obj.name and not obj.hide_get())
 
         # visible button
-        lod0_visible_operator = lod0Split.operator("object.lod_groups_toggle_visibility", text="", icon='RESTRICT_VIEW_OFF' if lod0_visible else 'RESTRICT_VIEW_ON')
+        lod0_visible_operator = lod0Split.operator("object.lod_groups_toggle_visibility", text="", icon='HIDE_OFF' if lod0_visible else 'HIDE_ON')
         lod0_visible_operator.lodGroup = "_LOD0"
             
         # select button
@@ -1148,10 +1148,10 @@ class LODGroupsPanel(bpy.types.Panel):
         
         # --------------------LOD1--------------------------------
         lod1Split.label(text= "LOD1")
-        lod1_visible = any(obj for obj in bpy.data.objects if "_LOD1" in obj.name and not obj.hide_viewport)
+        lod1_visible = any(obj for obj in bpy.data.objects if "_LOD1" in obj.name and not obj.hide_get())
         
         # visible button
-        lod1_visible_operator = lod1Split.operator("object.lod_groups_toggle_visibility", text="", icon='RESTRICT_VIEW_OFF' if lod1_visible else 'RESTRICT_VIEW_ON')
+        lod1_visible_operator = lod1Split.operator("object.lod_groups_toggle_visibility", text="", icon='HIDE_OFF' if lod1_visible else 'HIDE_ON')
         lod1_visible_operator.lodGroup = "_LOD1"
         
         # select button
@@ -1160,10 +1160,10 @@ class LODGroupsPanel(bpy.types.Panel):
         
         # --------------------LOD2--------------------------------
         lod2Split.label(text= "LOD2")
-        lod2_visible = any(obj for obj in bpy.data.objects if "_LOD2" in obj.name and not obj.hide_viewport)
+        lod2_visible = any(obj for obj in bpy.data.objects if "_LOD2" in obj.name and not obj.hide_get())
         
         # visible button
-        lod2_visible_operator = lod2Split.operator("object.lod_groups_toggle_visibility", text="", icon='RESTRICT_VIEW_OFF' if lod2_visible else 'RESTRICT_VIEW_ON')
+        lod2_visible_operator = lod2Split.operator("object.lod_groups_toggle_visibility", text="", icon='HIDE_OFF' if lod2_visible else 'HIDE_ON')
         lod2_visible_operator.lodGroup = "_LOD2"
         
         # select button
@@ -1172,17 +1172,17 @@ class LODGroupsPanel(bpy.types.Panel):
         
         # --------------------LOD3--------------------------------
         lod3Split.label(text= "LOD3")
-        lod3_visible = any(obj for obj in bpy.data.objects if "_LOD3" in obj.name and not obj.hide_viewport)
+        lod3_visible = any(obj for obj in bpy.data.objects if "_LOD3" in obj.name and not obj.hide_get())
         
         # visible button
-        lod3_visible_operator = lod3Split.operator("object.lod_groups_toggle_visibility", text="", icon='RESTRICT_VIEW_OFF' if lod3_visible else 'RESTRICT_VIEW_ON')
+        lod3_visible_operator = lod3Split.operator("object.lod_groups_toggle_visibility", text="", icon='HIDE_OFF' if lod3_visible else 'HIDE_ON')
         lod3_visible_operator.lodGroup = "_LOD3"
         
         # select button
         lod3_select_operator = lod3Split.operator("object.lod_groups_select", text="", icon='RESTRICT_SELECT_OFF')
         lod3_select_operator.lodGroup = "_LOD3"
         
-        groupBox.operator("object.unhide_lod_objects", text="ALL")
+        groupBox.operator("object.unhide_lod_objects", text="RESET")
         
     
     
@@ -1242,16 +1242,16 @@ class LodToggleVisibilityOperator(bpy.types.Operator):
         
         
         # Determine the current visibility state (check the first object's state)
-        new_visibility = not lods[0].hide_viewport
+        new_visibility = not lods[0].hide_get()
 
         # Toggle visibility for all matching objects
         for obj in lods:
-            obj.hide_viewport = new_visibility  # Hide/unhide in viewport
+            obj.hide_set(new_visibility)  # Hide/unhide in viewport
 
         return {'FINISHED'}
     
 class UnhideLODObjectsOperator(bpy.types.Operator):
-    """Unhide LOD Objects if bugged"""
+    """Unhide all LOD Objects"""
     bl_idname = "object.unhide_lod_objects"
     bl_label = "Unhide LOD Objects"
     
