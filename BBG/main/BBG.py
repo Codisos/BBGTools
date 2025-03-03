@@ -392,8 +392,22 @@ def ChecksUnregister():
 # Format Check
 #---------------------------------------------------
 def check_material_format(objects_to_check):
+    
+    # Get mode options
+    active_export_mode = bpy.context.scene.other_properties.export_mode_enum
+    
+    is_final = False
+    
     invalid_materials = set()
-    pattern = re.compile(r'^(?:[A-Z][^_]*_PROTOTYPE|(?!.*PROTOTYPE)[A-Z]+_[^_]+_[^_]+)$')
+    
+    # Get mode value
+    if active_export_mode == 'OP1':
+            is_final = True
+    
+    if is_final:
+        pattern = re.compile(r'^(?!.*_PROTOTYPE)[A-Z]+_[^_]+_[^_]+$')
+    else:
+        pattern = re.compile(r'^(?:[A-Z][^_]*_PROTOTYPE|(?!.*PROTOTYPE)[A-Z]+_[^_]+_[^_]+)$')
     
     for obj in objects_to_check:
         if obj.material_slots:
@@ -406,6 +420,29 @@ def check_material_format(objects_to_check):
     return invalid_materials
 
 #TODO texture name function (same rules)
+def check_albedo_texture_format(objects_to_check):
+    
+    invalid_materials = set()
+    pattern = re.compile(r'^(?:[A-Z][^_]*_PROTOTYPE|(?!.*PROTOTYPE)[A-Z]+_[^_]+_[^_]+)$')
+
+    for obj in objects_to_check:
+        if not obj.data or not hasattr(obj.data, "materials"):
+            continue
+
+        for mat in obj.data.materials:
+            if not mat or not mat.node_tree:
+                continue
+
+            for node in mat.node_tree.nodes:
+                if node.type == 'TEX_IMAGE' and node.image:
+                    texture_name = node.image.name
+                    if re.match(pattern, texture_name):
+                        if obj.name not in invalid_materials:
+                            invalid_materials[obj.name] = []
+                        invalid_materials[obj.name].append(texture_name)
+
+    return invalid_materials
+
 
 class FormatCheck(bpy.types.Operator):
     """Check material name format for all visible or selected objects"""
@@ -416,6 +453,8 @@ class FormatCheck(bpy.types.Operator):
     def execute(self, context):
         objects_to_check = []
         
+        
+        
         if len(context.selected_objects) > 1:
             objects_to_check = context.selected_objects
         elif len(context.selected_objects) == 1:
@@ -424,6 +463,8 @@ class FormatCheck(bpy.types.Operator):
             objects_to_check = [obj for obj in context.visible_objects if obj.type == 'MESH']
         
         invalid_materials = check_material_format(objects_to_check)
+        
+        
         
         if invalid_materials:
             self.report({'WARNING'}, f"Invalid material names:\n" + "\n".join(invalid_materials))
