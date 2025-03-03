@@ -1296,5 +1296,5 @@ def unregister():
     LODGroupsUnregister()
 
 # TURN OFF IF TESTING IN BLENDER 
-if __name__ == "__main__":
-    register()
+#if __name__ == "__main__":
+#    register()
