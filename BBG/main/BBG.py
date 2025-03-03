@@ -229,6 +229,18 @@ class ExportFBXWithChecks(bpy.types.Operator):
             check_messages.append("MATERIALS")
             check_icons.append('CHECKMARK')
         
+        if active_export_mode == 'OP1':
+
+            invalid_material_textures = check_albedo_texture_format(format_objects_to_check)
+            
+            if invalid_material_textures:
+                check_messages.append("TEXTURES")
+                check_icons.append('CANCEL')
+                self.report({'ERROR'}, f"TEXTURE ERROR!!!")
+            else:
+                check_messages.append("TEXTURES")
+                check_icons.append('CHECKMARK')
+        
         
         # ScaleCheck
         select_bool = False
@@ -419,12 +431,9 @@ def check_material_format(objects_to_check):
     
     return invalid_materials
 
-#TODO texture name function (same rules)
 def check_albedo_texture_format(objects_to_check):
+    invalid_materials = {}  # Using a dictionary to store invalid materials by object name
     
-    invalid_materials = set()
-    pattern = re.compile(r'^(?:[A-Z][^_]*_PROTOTYPE|(?!.*PROTOTYPE)[A-Z]+_[^_]+_[^_]+)$')
-
     for obj in objects_to_check:
         if not obj.data or not hasattr(obj.data, "materials"):
             continue
@@ -436,10 +445,13 @@ def check_albedo_texture_format(objects_to_check):
             for node in mat.node_tree.nodes:
                 if node.type == 'TEX_IMAGE' and node.image:
                     texture_name = node.image.name
-                    if re.match(pattern, texture_name):
+                    # Remove the file extension (e.g., .tga, .png, .jpg, etc.)
+                    texture_basename, _ = os.path.splitext(texture_name)
+                    # If the texture's basename does not match the material name, mark it as invalid.
+                    if texture_basename != mat.name:
                         if obj.name not in invalid_materials:
                             invalid_materials[obj.name] = []
-                        invalid_materials[obj.name].append(texture_name)
+                        invalid_materials[obj.name].append(mat.name)
 
     return invalid_materials
 
@@ -1284,5 +1296,5 @@ def unregister():
     LODGroupsUnregister()
 
 # TURN OFF IF TESTING IN BLENDER 
-#if __name__ == "__main__":
-#    register()
+if __name__ == "__main__":
+    register()
