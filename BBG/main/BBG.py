@@ -1128,6 +1128,7 @@ class LODGroupsPanel(bpy.types.Panel):
         groupBox = layout.box()
         
         
+        
         lod0Split = groupBox.row().split(factor = 0.3, align=True)
         lod1Split = groupBox.row().split(factor = 0.3, align=True)
         lod2Split = groupBox.row().split(factor = 0.3, align=True)
@@ -1181,6 +1182,8 @@ class LODGroupsPanel(bpy.types.Panel):
         lod3_select_operator = lod3Split.operator("object.lod_groups_select", text="", icon='RESTRICT_SELECT_OFF')
         lod3_select_operator.lodGroup = "_LOD3"
         
+        groupBox.operator("object.unhide_lod_objects", text="ALL")
+        
     
     
 
@@ -1224,7 +1227,7 @@ class LodSelectGroupOperator(bpy.types.Operator):
 class LodToggleVisibilityOperator(bpy.types.Operator):
     """Toggle visibility of LOD group"""
     bl_idname = "object.lod_groups_toggle_visibility"
-    bl_label = "Toggle LOD Visibility"
+    bl_label = ""
     
     lodGroup: bpy.props.StringProperty(name="_LODX")
 
@@ -1246,15 +1249,28 @@ class LodToggleVisibilityOperator(bpy.types.Operator):
             obj.hide_viewport = new_visibility  # Hide/unhide in viewport
 
         return {'FINISHED'}
-                    
+    
+class UnhideLODObjectsOperator(bpy.types.Operator):
+    """Unhide LOD Objects if bugged"""
+    bl_idname = "object.unhide_lod_objects"
+    bl_label = "Unhide LOD Objects"
+    
+    def execute(self, context):
+        # Loop through all objects in the scene
+        for obj in bpy.context.scene.objects:
+            if "_LOD" in obj.name and obj.hide_get():
+                obj.hide_set(False)  # Unhide the object
+        return {'FINISHED'}                    
 
 def LODGroupsRegister():
     bpy.utils.register_class(LODGroupsPanel)
+    bpy.utils.register_class(UnhideLODObjectsOperator)
     bpy.utils.register_class(LodSelectGroupOperator)
     bpy.utils.register_class(LodToggleVisibilityOperator)
     
 def LODGroupsUnregister():
     bpy.utils.unregister_class(LODGroupsPanel)
+    bpy.utils.unregister_class(UnhideLODObjectsOperator)
     bpy.utils.unregister_class(LodSelectGroupOperator)
     bpy.utils.unregister_class(LodToggleVisibilityOperator)
     
