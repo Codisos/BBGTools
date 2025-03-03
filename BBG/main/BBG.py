@@ -134,7 +134,6 @@ class CheckPanel(bpy.types.Panel):
     bl_idname = "scale_check"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    #bl_context = "object"
     bl_category = 'BBG'
     bl_options = {"HEADER_LAYOUT_EXPAND"}
      
@@ -146,15 +145,13 @@ class CheckPanel(bpy.types.Panel):
         boxScale.label(text="SCALE")
         rowScale = boxScale.row() 
         rowScale.operator("object.check_scales", text="Check Scales")
-        rowScale.operator("object.fix_scales", text="Fix Scales")
         
         #MATERIALS BOX
         boxMaterials = layout.box()
         boxMaterials.label(text="MATERIALS")
         boxMaterials.row().prop(context.scene, "include_name_MATERIAL", text="Include \"Material\"")
-        rowMaterials = boxMaterials.row()  
-        rowMaterials.operator("wm.clean_materials", text="Clean Materials")
-        rowMaterials.operator("object.format_check", text="Format Check")
+        boxMaterials.row().operator("wm.clean_materials", text="Clean Materials")
+        boxMaterials.row().operator("object.format_check", text="Format Check")
         
         #OTHER/settings BOX "header"
         other_props = context.scene.other_properties
@@ -375,74 +372,14 @@ def get_objects_recursive(export_bool, select_bool):
 
     return objects_with_non_default_scales, None  # Return the list and no error
 
-
-
-class FixScalesOperator(bpy.types.Operator):
-    """Applies objects to (1,1,1) scale in 'Export' collection"""
-    bl_idname = "object.fix_scales"
-    bl_label = "Fix Scales"
-
-    def execute(self, context):
-        collection = bpy.data.collections.get("Export")
-
-        if collection is None:
-            self.report({'ERROR'}, "Collection 'Export' not found")
-            return {'CANCELLED'}
-
-        # Get all objects recursively and fix their scales
-        checked_objects = set()
-        objects_with_non_default_scales = []
-        self.fix_scales_recursive(collection, objects_with_non_default_scales, checked_objects)
-
-        if objects_with_non_default_scales:
-            self.report({'INFO'}, f"Scales fixed")
-        else:
-            self.report({'INFO'}, "✅ No objects needed fixing")
-
-        return {'FINISHED'}
-
-    def fix_scales_recursive(self, collection, objects_list, checked_objects):
-        """Recursively fix the scale of all objects in the collection and sub-collections"""
-        if hasattr(collection, "objects"):
-            for obj in collection.objects:
-                if obj.name not in checked_objects:
-                    self.fix_object_scale(obj, objects_list, checked_objects)
-
-        # Recursively fix objects in child collections
-        for sub_collection in collection.children:
-            self.fix_scales_recursive(sub_collection, objects_list, checked_objects)
-
-    def fix_object_scale(self, obj, objects_list, checked_objects):
-        """Fix the scale of an object to (1,1,1) if it's not already"""
-        # Add object to checked list to prevent re-checking
-        checked_objects.add(obj.name)
-
-        # Get the effective scale from the world matrix
-        effective_scale = obj.matrix_world.to_scale()
-        
-        # If scale is not (1, 1, 1), fix it
-        if not (math.isclose(effective_scale.x, 1.0, rel_tol=1e-3) and
-                math.isclose(effective_scale.y, 1.0, rel_tol=1e-3) and
-                math.isclose(effective_scale.z, 1.0, rel_tol=1e-3)):
-            bpy.context.view_layer.objects.active = obj
-            obj.select_set(True)
-            bpy.ops.object.transform_apply(location=False,rotation=False,scale=True)
-            objects_list.append(obj.name)
-
-        # Check and fix the object's children
-        for child in obj.children:
-            if child.name not in checked_objects:
-                self.fix_object_scale(child, objects_list, checked_objects)
                 
 def ChecksRegister():
     bpy.utils.register_class(CheckScalesOperator)
-    bpy.utils.register_class(FixScalesOperator)
     bpy.utils.register_class(CheckPanel)
     bpy.types.Scene.other_props = bpy.props.PointerProperty(type=OtherProperties)
     
 def ChecksUnregister():
     bpy.utils.unregister_class(CheckScalesOperator)
-    bpy.utils.unregister_class(FixScalesOperator)
     bpy.utils.unregister_class(CheckPanel)
     del bpy.types.Scene.other_props
 
@@ -1306,5 +1243,5 @@ def unregister():
     LODGroupsUnregister()
 
 # TURN OFF IF TESTING IN BLENDER 
-#if __name__ == "__main__":
-#    register()
+if __name__ == "__main__":
+    register()
