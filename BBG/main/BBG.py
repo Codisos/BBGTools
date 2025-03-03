@@ -1232,7 +1232,6 @@ class LodToggleVisibilityOperator(bpy.types.Operator):
         # Ensure the search string is stripped of spaces
         target_name = self.lodGroup.strip()
 
-        # Find objects that contain the given name
         lods = [obj for obj in bpy.data.objects if target_name in obj.name]
 
         if not lods:
@@ -1291,5 +1290,5 @@ def unregister():
     LODGroupsUnregister()
 
 # TURN OFF IF TESTING IN BLENDER 
-if __name__ == "__main__":
-    register()
+#if __name__ == "__main__":
+#    register()
