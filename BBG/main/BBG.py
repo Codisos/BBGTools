@@ -144,7 +144,7 @@ class CheckPanel(bpy.types.Panel):
         #SCALES BOX
         boxScale = layout.box()
         boxScale.label(text="SCALE")
-        rowScale = boxScale.row()  
+        rowScale = boxScale.row() 
         rowScale.operator("object.check_scales", text="Check Scales")
         rowScale.operator("object.fix_scales", text="Fix Scales")
         
@@ -1105,6 +1105,164 @@ def LodUnregister():
 # /LOD
 #---------------------------------------------------
 
+
+#---------------------------------------------------
+# LOD Groups
+#---------------------------------------------------
+
+class LODGroupsPanel(bpy.types.Panel):
+    """Creates a Panel in the Object properties window"""
+    bl_label = "LOD Groups"
+    bl_idname = "lod_groups_panel"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'BBG'
+    bl_options = {"HEADER_LAYOUT_EXPAND"}
+    
+    
+    
+    def draw(self, context):
+        
+        layout = self.layout
+        
+        groupBox = layout.box()
+        
+        
+        lod0Split = groupBox.row().split(factor = 0.3, align=True)
+        lod1Split = groupBox.row().split(factor = 0.3, align=True)
+        lod2Split = groupBox.row().split(factor = 0.3, align=True)
+        lod3Split = groupBox.row().split(factor = 0.3, align=True)
+        
+        # --------------------LOD0--------------------------------
+        lod0Split.label(text="LOD0")
+        lod0_visible = any(obj for obj in bpy.data.objects if "_LOD0" in obj.name and not obj.hide_viewport)
+
+        # visible button
+        lod0_visible_operator = lod0Split.operator("object.lod_groups_toggle_visibility", text="", icon='RESTRICT_VIEW_OFF' if lod0_visible else 'RESTRICT_VIEW_ON')
+        lod0_visible_operator.lodGroup = "_LOD0"
+            
+        # select button
+        lod0_select_operator = lod0Split.operator("object.lod_groups_select", text="", icon='RESTRICT_SELECT_OFF')
+        lod0_select_operator.lodGroup = "_LOD0"
+        
+        # --------------------LOD1--------------------------------
+        lod1Split.label(text= "LOD1")
+        lod1_visible = any(obj for obj in bpy.data.objects if "_LOD1" in obj.name and not obj.hide_viewport)
+        
+        # visible button
+        lod1_visible_operator = lod1Split.operator("object.lod_groups_toggle_visibility", text="", icon='RESTRICT_VIEW_OFF' if lod1_visible else 'RESTRICT_VIEW_ON')
+        lod1_visible_operator.lodGroup = "_LOD1"
+        
+        # select button
+        lod1_select_operator = lod1Split.operator("object.lod_groups_select", text="", icon='RESTRICT_SELECT_OFF')
+        lod1_select_operator.lodGroup = "_LOD1"
+        
+        # --------------------LOD2--------------------------------
+        lod2Split.label(text= "LOD2")
+        lod2_visible = any(obj for obj in bpy.data.objects if "_LOD2" in obj.name and not obj.hide_viewport)
+        
+        # visible button
+        lod2_visible_operator = lod2Split.operator("object.lod_groups_toggle_visibility", text="", icon='RESTRICT_VIEW_OFF' if lod2_visible else 'RESTRICT_VIEW_ON')
+        lod2_visible_operator.lodGroup = "_LOD2"
+        
+        # select button
+        lod2_select_operator = lod2Split.operator("object.lod_groups_select", text="", icon='RESTRICT_SELECT_OFF')
+        lod2_select_operator.lodGroup = "_LOD2"
+        
+        # --------------------LOD3--------------------------------
+        lod3Split.label(text= "LOD3")
+        lod3_visible = any(obj for obj in bpy.data.objects if "_LOD3" in obj.name and not obj.hide_viewport)
+        
+        # visible button
+        lod3_visible_operator = lod3Split.operator("object.lod_groups_toggle_visibility", text="", icon='RESTRICT_VIEW_OFF' if lod3_visible else 'RESTRICT_VIEW_ON')
+        lod3_visible_operator.lodGroup = "_LOD3"
+        
+        # select button
+        lod3_select_operator = lod3Split.operator("object.lod_groups_select", text="", icon='RESTRICT_SELECT_OFF')
+        lod3_select_operator.lodGroup = "_LOD3"
+        
+    
+    
+
+class LodSelectGroupOperator(bpy.types.Operator):
+    """Select LOD Group"""
+    bl_idname = "object.lod_groups_select"
+    bl_label = ""
+    
+    lodGroup: bpy.props.StringProperty(name="_LODX")
+    
+    def execute(self, context):
+        
+        target_lod = self.lodGroup.strip()
+        
+        lods = [obj for obj in bpy.data.objects if target_lod in obj.name]
+        
+        bpy.ops.object.select_all(action='DESELECT')
+
+        lod_objects = lods
+
+        for obj in lod_objects:
+            obj.select_set(True)
+
+        if lod_objects:
+            bpy.context.view_layer.objects.active = lod_objects[-1]
+        
+        return {'FINISHED'}
+    
+    def selectLODs(self, lodsToSelect):
+        
+        bpy.ops.object.select_all(action='DESELECT')
+
+        lod_objects = lodsToSelect
+
+        for obj in lod_objects:
+            obj.select_set(True)
+
+        if lod_objects:
+            bpy.context.view_layer.objects.active = lod_objects[-1]
+            
+class LodToggleVisibilityOperator(bpy.types.Operator):
+    """Toggle visibility of LOD group"""
+    bl_idname = "object.lod_groups_toggle_visibility"
+    bl_label = "Toggle LOD Visibility"
+    
+    lodGroup: bpy.props.StringProperty(name="_LODX")
+
+    def execute(self, context):
+        # Ensure the search string is stripped of spaces
+        target_name = self.lodGroup.strip()
+
+        # Find objects that contain the given name
+        lods = [obj for obj in bpy.data.objects if target_name in obj.name]
+
+        if not lods:
+            return {'CANCELLED'}
+        
+        
+        # Determine the current visibility state (check the first object's state)
+        new_visibility = not lods[0].hide_viewport
+
+        # Toggle visibility for all matching objects
+        for obj in lods:
+            obj.hide_viewport = new_visibility  # Hide/unhide in viewport
+
+        return {'FINISHED'}
+                    
+
+def LODGroupsRegister():
+    bpy.utils.register_class(LODGroupsPanel)
+    bpy.utils.register_class(LodSelectGroupOperator)
+    bpy.utils.register_class(LodToggleVisibilityOperator)
+    
+def LODGroupsUnregister():
+    bpy.utils.unregister_class(LODGroupsPanel)
+    bpy.utils.unregister_class(LodSelectGroupOperator)
+    bpy.utils.unregister_class(LodToggleVisibilityOperator)
+    
+
+#---------------------------------------------------
+# /LOD Groups
+#---------------------------------------------------
 def register():
     RootCheckRegister()
     ExportWithChecksRegister()
@@ -1116,6 +1274,7 @@ def register():
     MergeAnimationsRegister()
     CleanMaterialsRegister()
     LodRegister()
+    LODGroupsRegister()
     
 
 def unregister():
@@ -1129,7 +1288,8 @@ def unregister():
     MergeAnimationsUnregister()
     CleanMaterialsUnregister()
     LodUnregister()
+    LODGroupsUnregister()
 
 # TURN OFF IF TESTING IN BLENDER 
-#if __name__ == "__main__":
-#    register()
+if __name__ == "__main__":
+    register()
