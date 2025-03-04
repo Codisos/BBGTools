@@ -1004,9 +1004,12 @@ class LODObjectPickerPanel(bpy.types.Panel):
         # Number of LODs input
         layout.prop(context.scene, "num_lods", text="Number of LODs")
         
-        # Decimate checkbox
+        
         layout.prop(context.scene, "apply_decimate", text="Decimate")
-        """Add Decimate modifier LODs"""
+
+        
+        layout.prop(context.scene, "inverse_matrix", text="Inverse Matrix")
+
 
         # Button to run the operator to add LODs
         layout.operator("object.add_lod_suffix")
@@ -1024,6 +1027,7 @@ class AddLODSuffix(bpy.types.Operator):
         selected_object = context.scene.lod_target
         num_lods = context.scene.num_lods
         apply_decimate = context.scene.apply_decimate
+        inverse_matrix = context.scene.inverse_matrix
 
         if not selected_object:
             self.report({'ERROR'}, "No object selected!")
@@ -1040,9 +1044,14 @@ class AddLODSuffix(bpy.types.Operator):
             empty.location = bpy.context.scene.cursor.location
             empty.rotation_euler = obj.rotation_euler
             empty.parent = obj.parent
-            if empty.parent:
-                empty.matrix_parent_inverse = empty.parent.matrix_world.inverted()
+            
+            #wtf kdyz je to import tohle nesmi byt aktivni !!!
+            if not inverse_matrix:
+                if empty.parent:
+                    empty.matrix_parent_inverse = empty.parent.matrix_world.inverted()
+            
             bpy.context.collection.objects.link(empty)  # Link empty to the collection
+            
             return empty
 
         # Transfer mesh data-block from _OLD object to _LOD0 object
@@ -1157,6 +1166,7 @@ def LodRegister():
     bpy.types.Scene.lod_target = bpy.props.PointerProperty(type=bpy.types.Object)
     bpy.types.Scene.num_lods = bpy.props.IntProperty(name="Number of LODs", default=2, min=1)
     bpy.types.Scene.apply_decimate = bpy.props.BoolProperty(name="Decimate", default=False)
+    bpy.types.Scene.inverse_matrix = bpy.props.BoolProperty(name="", default=False)
 
 def LodUnregister():
     bpy.utils.unregister_class(AddLODSuffix)
@@ -1165,6 +1175,7 @@ def LodUnregister():
     del bpy.types.Scene.lod_target
     del bpy.types.Scene.num_lods
     del bpy.types.Scene.apply_decimate
+    del bpy.types.Scene.inverse_matrix
 
 #---------------------------------------------------
 # /LOD
@@ -1372,6 +1383,6 @@ def unregister():
     LodUnregister()
     LODGroupsUnregister()
 
-# TURN OFF IF TESTING IN BLENDER 
+# TURN ON IF TESTING IN BLENDER 
 #if __name__ == "__main__":
 #    register()
