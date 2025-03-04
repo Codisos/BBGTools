@@ -273,6 +273,12 @@ class ExportFBXWithChecks(bpy.types.Operator):
             if invalid_material_textures:
                 check_messages.append("TEXTURES")
                 check_icons.append('SEQUENCE_COLOR_02')
+            
+            #--------------_OLD CHECK-----------------------------
+            if search_for_old_objects(objects_to_check):
+                check_messages.append("_OLD")
+                check_icons.append('CANCEL')
+                self.report({'ERROR'}, f"_OLD ERROR!!!")
                 
         
         
@@ -1132,7 +1138,16 @@ class RemoveOldObjects(bpy.types.Operator):
 
         self.report({'INFO'}, f"Removed {len(objects_to_delete)} objects with _OLD suffix.")
         return {'FINISHED'}
-
+    
+    
+def search_for_old_objects(objects_to_check):
+    invalid_objects = []
+    
+    for obj in objects_to_check:
+        if obj.name.endswith('_OLD'):
+            invalid_objects.append(obj)
+            
+    return invalid_objects
 
 
 def LodRegister():
@@ -1358,5 +1373,5 @@ def unregister():
     LODGroupsUnregister()
 
 # TURN OFF IF TESTING IN BLENDER 
-if __name__ == "__main__":
-    register()
+#if __name__ == "__main__":
+#    register()
