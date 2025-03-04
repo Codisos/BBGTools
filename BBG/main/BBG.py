@@ -195,7 +195,11 @@ class ExportFBXWithChecks(bpy.types.Operator):
         
         # messages for popup
         check_messages= []
-        check_icons= []    
+        check_icons= []
+        
+        # for scale check
+        select_bool = False
+        export_bool = True    
         
         #-------Run All Checks----------
         
@@ -243,8 +247,6 @@ class ExportFBXWithChecks(bpy.types.Operator):
         
         
         # ScaleCheck
-        select_bool = False
-        export_bool = True
         
         if len(bpy.context.selected_objects) > 1:
             select_bool = True
@@ -515,6 +517,7 @@ def FormatCheckUnregister():
 #---------------------------------------------------
 # Normals Check
 #---------------------------------------------------
+# NOT WORKING!
 
 class CheckNormalsOperator(bpy.types.Operator):
     """Check if selected objects have normal issues"""
@@ -1107,7 +1110,7 @@ class LODGroupsPanel(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'BBG'
-    bl_options = {"HEADER_LAYOUT_EXPAND"}
+    bl_options = {"DEFAULT_CLOSED"}
     
     
     
@@ -1296,5 +1299,5 @@ def unregister():
     LODGroupsUnregister()
 
 # TURN OFF IF TESTING IN BLENDER 
-#if __name__ == "__main__":
-#    register()
+if __name__ == "__main__":
+    register()
