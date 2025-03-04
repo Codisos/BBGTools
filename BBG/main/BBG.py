@@ -1220,6 +1220,7 @@ class LodSelectGroupOperator(bpy.types.Operator):
     """Select LOD Group"""
     bl_idname = "object.lod_groups_select"
     bl_label = ""
+    bl_options = {'REGISTER', 'UNDO'}
     
     lodGroup: bpy.props.StringProperty(name="_LODX")
     
@@ -1257,7 +1258,7 @@ class LodToggleVisibilityOperator(bpy.types.Operator):
     """Toggle visibility of LOD group"""
     bl_idname = "object.lod_groups_toggle_visibility"
     bl_label = ""
-    
+    bl_options = {'REGISTER', 'UNDO'}
     
     lodGroup: bpy.props.StringProperty(name="_LODX")
 
