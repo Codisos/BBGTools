@@ -149,9 +149,8 @@ class CheckPanel(bpy.types.Panel):
         #MATERIALS BOX
         boxMaterials = layout.box()
         boxMaterials.label(text="MATERIALS")
-        boxMaterials.row().prop(context.scene, "include_name_MATERIAL", text="Include \"Material\"")
         boxMaterials.row().operator("wm.clean_materials", text="Clean Materials")
-        boxMaterials.row().operator("object.format_check", text="Format Check")
+        boxMaterials.row().operator("object.format_check", text="Material Check")
         boxMaterials.row().operator("object.texture_format_check", text="Texture Check")
         
         #OTHER/settings BOX "header"
@@ -165,6 +164,7 @@ class CheckPanel(bpy.types.Panel):
             #rowOther.prop(context.scene.other_properties, "include_prototype_root", text="PROTOTYPE Export")
             rowOther.prop(context.scene.other_properties, "export_mode_enum", text="Mode")
             boxOther.row().prop(context.scene.other_properties, "custom_collider_name", text="Material Name")
+            boxOther.row().prop(context.scene, "include_name_MATERIAL", text="Include \"Material\"")
             #rowOther.operator("object.check_normals", text="Check Normals")
         
         #PIVOT BOX
