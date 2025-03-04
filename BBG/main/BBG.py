@@ -215,16 +215,16 @@ class ExportFBXWithChecks(bpy.types.Operator):
             
             
         # FormatCheck-"MATERIALS" (MatName, Duplicates, COL)
-        format_objects_to_check = []
+        objects_to_check = []
         
         if len(context.selected_objects) > 1:
-            format_objects_to_check = context.selected_objects
+            objects_to_check = context.selected_objects
         elif len(context.selected_objects) == 1:
-            format_objects_to_check = [context.selected_objects[0]]
+            objects_to_check = [context.selected_objects[0]]
         else:
-            format_objects_to_check = [obj for obj in context.visible_objects if obj.type == 'MESH']
+            objects_to_check = [obj for obj in context.visible_objects if obj.type == 'MESH']
         
-        invalid_materials = check_material_format(format_objects_to_check)
+        invalid_materials = check_material_format(objects_to_check)
         
         if invalid_materials:
             check_messages.append("MATERIALS")
@@ -237,7 +237,7 @@ class ExportFBXWithChecks(bpy.types.Operator):
         # IF EXPORT MODE FINAL
         if active_export_mode == 'OP1':
 
-            invalid_material_textures = check_albedo_texture_format(format_objects_to_check)
+            invalid_material_textures = check_albedo_texture_format(objects_to_check)
             
             if invalid_material_textures:
                 check_messages.append("TEXTURES")
@@ -246,6 +246,8 @@ class ExportFBXWithChecks(bpy.types.Operator):
             else:
                 check_messages.append("TEXTURES")
                 check_icons.append('CHECKMARK')
+                
+        
         
         
         # ScaleCheck
@@ -404,6 +406,20 @@ def ChecksUnregister():
 #---------------------------------------------------
 
 
+
+#---------------------------------------------------
+# COL Check
+#---------------------------------------------------
+# only for export check
+
+
+
+#---------------------------------------------------
+# /COL Checks
+#---------------------------------------------------
+
+
+
 #---------------------------------------------------
 # Format Check
 #---------------------------------------------------
@@ -494,7 +510,7 @@ class FormatCheck(bpy.types.Operator):
       
         
 class TextureFormatCheck(bpy.types.Operator):
-    """Check materials albedo texture format for all visible or selected objects"""
+    """Check materials texture name for all visible or selected objects"""
     bl_idname = "object.texture_format_check"
     bl_label = "Check Materials Texture Format"
 
@@ -1335,5 +1351,5 @@ def unregister():
     LODGroupsUnregister()
 
 # TURN OFF IF TESTING IN BLENDER 
-#if __name__ == "__main__":
-#    register()
+if __name__ == "__main__":
+    register()
