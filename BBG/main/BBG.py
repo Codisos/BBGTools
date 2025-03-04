@@ -462,7 +462,6 @@ class FormatCheck(bpy.types.Operator):
     """Check material name format for all visible or selected objects"""
     bl_idname = "object.format_check"
     bl_label = "Check Material Format"
-    bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         objects_to_check = []
@@ -498,7 +497,6 @@ class TextureFormatCheck(bpy.types.Operator):
     """Check materials albedo texture format for all visible or selected objects"""
     bl_idname = "object.texture_format_check"
     bl_label = "Check Materials Texture Format"
-    bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         objects_to_check = []      
