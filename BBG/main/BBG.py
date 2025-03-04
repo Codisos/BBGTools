@@ -435,7 +435,7 @@ def check_material_format(objects_to_check):
 
 # If the texture's basename does not match the material name, mark it as invalid.
 def check_albedo_texture_format(objects_to_check):
-    invalid_materials = {}
+    invalid_materials = set()
     
     for obj in objects_to_check:
         if not obj.data or not hasattr(obj.data, "materials"):
@@ -450,10 +450,9 @@ def check_albedo_texture_format(objects_to_check):
                     texture_name = node.image.name
                     # Remove the file extension
                     texture_basename, _ = os.path.splitext(texture_name)
-                    if texture_basename != mat.name:
-                        if obj.name not in invalid_materials:
-                            invalid_materials[obj.name] = []
-                        invalid_materials[obj.name].append(mat.name)
+                    mat_name = mat.name + "_A"
+                    if texture_basename != mat_name:
+                        invalid_materials.add(mat.name)
 
     return invalid_materials
 
@@ -492,6 +491,7 @@ class FormatCheck(bpy.types.Operator):
         def draw(self, context):
             self.layout.label(text=message)
         bpy.context.window_manager.popup_menu(draw, title="Format Check", icon=icon)
+      
         
 class TextureFormatCheck(bpy.types.Operator):
     """Check materials albedo texture format for all visible or selected objects"""
