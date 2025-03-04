@@ -152,6 +152,7 @@ class CheckPanel(bpy.types.Panel):
         boxMaterials.row().prop(context.scene, "include_name_MATERIAL", text="Include \"Material\"")
         boxMaterials.row().operator("wm.clean_materials", text="Clean Materials")
         boxMaterials.row().operator("object.format_check", text="Format Check")
+        boxMaterials.row().operator("object.texture_format_check", text="Texture Check")
         
         #OTHER/settings BOX "header"
         other_props = context.scene.other_properties
@@ -233,6 +234,7 @@ class ExportFBXWithChecks(bpy.types.Operator):
             check_messages.append("MATERIALS")
             check_icons.append('CHECKMARK')
         
+        # IF EXPORT MODE FINAL
         if active_export_mode == 'OP1':
 
             invalid_material_textures = check_albedo_texture_format(format_objects_to_check)
@@ -405,21 +407,19 @@ def ChecksUnregister():
 #---------------------------------------------------
 # Format Check
 #---------------------------------------------------
+
+# Mark invalid if contains PROTOTYPE in final mode or doesn not follow naming conventions
 def check_material_format(objects_to_check):
     
     # Get mode options
     active_export_mode = bpy.context.scene.other_properties.export_mode_enum
-    
-    is_final = False
+
     
     invalid_materials = set()
     
-    # Get mode value
+    # Get mode
     if active_export_mode == 'OP1':
-            is_final = True
-    
-    if is_final:
-        pattern = re.compile(r'^(?!.*_PROTOTYPE)[A-Z]+_[^_]+_[^_]+$')
+            pattern = re.compile(r'^(?!.*_PROTOTYPE)[A-Z]+_[^_]+_[^_]+$')      
     else:
         pattern = re.compile(r'^(?:[A-Z][^_]*_PROTOTYPE|(?!.*PROTOTYPE)[A-Z]+_[^_]+_[^_]+)$')
     
@@ -433,8 +433,9 @@ def check_material_format(objects_to_check):
     
     return invalid_materials
 
+# If the texture's basename does not match the material name, mark it as invalid.
 def check_albedo_texture_format(objects_to_check):
-    invalid_materials = {}  # Using a dictionary to store invalid materials by object name
+    invalid_materials = {}
     
     for obj in objects_to_check:
         if not obj.data or not hasattr(obj.data, "materials"):
@@ -447,9 +448,8 @@ def check_albedo_texture_format(objects_to_check):
             for node in mat.node_tree.nodes:
                 if node.type == 'TEX_IMAGE' and node.image:
                     texture_name = node.image.name
-                    # Remove the file extension (e.g., .tga, .png, .jpg, etc.)
+                    # Remove the file extension
                     texture_basename, _ = os.path.splitext(texture_name)
-                    # If the texture's basename does not match the material name, mark it as invalid.
                     if texture_basename != mat.name:
                         if obj.name not in invalid_materials:
                             invalid_materials[obj.name] = []
@@ -493,6 +493,40 @@ class FormatCheck(bpy.types.Operator):
         def draw(self, context):
             self.layout.label(text=message)
         bpy.context.window_manager.popup_menu(draw, title="Format Check", icon=icon)
+        
+class TextureFormatCheck(bpy.types.Operator):
+    """Check materials albedo texture format for all visible or selected objects"""
+    bl_idname = "object.texture_format_check"
+    bl_label = "Check Materials Texture Format"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        objects_to_check = []      
+        
+        if len(context.selected_objects) > 1:
+            objects_to_check = context.selected_objects
+        elif len(context.selected_objects) == 1:
+            objects_to_check = [context.selected_objects[0]]
+        else:
+            objects_to_check = [obj for obj in context.visible_objects if obj.type == 'MESH']
+        
+        invalid_materials = check_albedo_texture_format(objects_to_check)
+        
+        
+        
+        if invalid_materials:
+            self.report({'WARNING'}, f"Materials with invalid texture:\n" + "\n".join(invalid_materials))
+            self.show_popup("Invalid textures detected. SEE CONSOLE", icon='ERROR')
+        else:
+            self.report({'INFO'}, "✅ TEXTURE NAMES OK")
+            self.show_popup("TEXTURE NAMES OK!", icon='CHECKMARK')
+        
+        return {'FINISHED'}
+    
+    def show_popup(self, message, icon='INFO'):
+        def draw(self, context):
+            self.layout.label(text=message)
+        bpy.context.window_manager.popup_menu(draw, title="Format Check", icon=icon)
 
 
 def menu_func(self, context):
@@ -501,11 +535,13 @@ def menu_func(self, context):
 
 def FormatCheckRegister():
     bpy.utils.register_class(FormatCheck)
+    bpy.utils.register_class(TextureFormatCheck)
     bpy.types.VIEW3D_MT_object.append(menu_func)
 
 
 def FormatCheckUnregister():
     bpy.utils.unregister_class(FormatCheck)
+    bpy.utils.unregister_class(TextureFormatCheck)
     bpy.types.VIEW3D_MT_object.remove(menu_func)
 
 
@@ -1221,6 +1257,7 @@ class LodToggleVisibilityOperator(bpy.types.Operator):
     """Toggle visibility of LOD group"""
     bl_idname = "object.lod_groups_toggle_visibility"
     bl_label = ""
+    
     
     lodGroup: bpy.props.StringProperty(name="_LODX")
 
