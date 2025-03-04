@@ -346,7 +346,7 @@ class CheckScalesOperator(bpy.types.Operator):
             self.report({'WARNING'}, f"Objects with scale errors:\n" + "\n".join(objects))
             self.show_popup(f"Object scale error. SEE CONSOLE", icon='ERROR')
         else:
-            self.report({'INFO'}, "✅ SCALES OK")
+            self.report({'INFO'}, "SCALES OK")
             self.show_popup("SCALES OK!", icon='CHECKMARK')
 
         return {'FINISHED'}
@@ -482,7 +482,7 @@ class FormatCheck(bpy.types.Operator):
             self.report({'WARNING'}, f"Invalid material names:\n" + "\n".join(invalid_materials))
             self.show_popup("Invalid material names detected. SEE CONSOLE", icon='ERROR')
         else:
-            self.report({'INFO'}, "✅ MATERIAL NAMES OK")
+            self.report({'INFO'}, "MATERIAL NAMES OK")
             self.show_popup("MATERIAL NAMES OK!", icon='CHECKMARK')
         
         return {'FINISHED'}
@@ -516,7 +516,7 @@ class TextureFormatCheck(bpy.types.Operator):
             self.report({'WARNING'}, f"Materials with invalid texture:\n" + "\n".join(invalid_materials))
             self.show_popup("Invalid textures detected. SEE CONSOLE", icon='ERROR')
         else:
-            self.report({'INFO'}, "✅ TEXTURE NAMES OK")
+            self.report({'INFO'}, "TEXTURE NAMES OK")
             self.show_popup("TEXTURE NAMES OK!", icon='CHECKMARK')
         
         return {'FINISHED'}
