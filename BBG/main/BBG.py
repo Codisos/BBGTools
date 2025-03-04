@@ -204,7 +204,8 @@ class ExportFBXWithChecks(bpy.types.Operator):
         
         #-------Run All Checks----------
         
-        # RootCheck
+        
+        #--------------ROOT CHECK-----------------------------   
         if object_root_check():
             check_messages.append("ROOT")
             check_icons.append('CHECKMARK')
@@ -214,16 +215,19 @@ class ExportFBXWithChecks(bpy.types.Operator):
             self.report({'ERROR'}, f"ROOT ERROR!!!")
             
             
-        # FormatCheck-"MATERIALS" (MatName, Duplicates, COL)
+        # Get objects to check
         objects_to_check = []
         
         if len(context.selected_objects) > 1:
             objects_to_check = context.selected_objects
+            select_bool = True
         elif len(context.selected_objects) == 1:
             objects_to_check = [context.selected_objects[0]]
         else:
             objects_to_check = [obj for obj in context.visible_objects if obj.type == 'MESH']
         
+        
+        #--------------MATERIALS CHECK-----------------------------   
         invalid_materials = check_material_format(objects_to_check)
         
         if invalid_materials:
@@ -234,28 +238,9 @@ class ExportFBXWithChecks(bpy.types.Operator):
             check_messages.append("MATERIALS")
             check_icons.append('CHECKMARK')
         
-        # IF EXPORT MODE FINAL
-        if active_export_mode == 'OP1':
-
-            invalid_material_textures = check_albedo_texture_format(objects_to_check)
-            
-            if invalid_material_textures:
-                check_messages.append("TEXTURES")
-                check_icons.append('CANCEL')
-                self.report({'ERROR'}, f"TEXTURE ERROR!!!")
-            else:
-                check_messages.append("TEXTURES")
-                check_icons.append('CHECKMARK')
-                
         
         
-        
-        # ScaleCheck
-        
-        if len(bpy.context.selected_objects) > 1:
-            select_bool = True
-        else:
-            select_bool = False
+        #--------------SCALE CHECK-----------------------------   
             
         objects, error = get_objects_recursive(export_bool, select_bool)
 
@@ -270,6 +255,25 @@ class ExportFBXWithChecks(bpy.types.Operator):
         else:
             check_messages.append("SCALES")
             check_icons.append('CHECKMARK')
+            
+
+        #--------------COL CHECK-----------------------------        
+        if not check_has_col(objects_to_check):
+            check_messages.append("COLLIDERS")
+            check_icons.append('SEQUENCE_COLOR_02')
+            
+            
+            
+        # IF EXPORT MODE FINAL
+        if active_export_mode == 'OP1':
+            
+            #--------------TEXTURE CHECK-----------------------------   
+            invalid_material_textures = check_albedo_texture_format(objects_to_check)
+            
+            if invalid_material_textures:
+                check_messages.append("TEXTURES")
+                check_icons.append('SEQUENCE_COLOR_02')
+                
         
         
         # SHOW CHECK POPUP
@@ -412,7 +416,10 @@ def ChecksUnregister():
 #---------------------------------------------------
 # only for export check
 
-
+def check_has_col(objects_to_check):
+    has_col = any("COL" in obj.name for obj in objects_to_check)
+    
+    return has_col
 
 #---------------------------------------------------
 # /COL Checks
