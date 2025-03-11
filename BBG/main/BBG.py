@@ -464,6 +464,10 @@ def check_material_format(objects_to_check):
 
 # If the texture's basename does not match the material name, mark it as invalid.
 def check_albedo_texture_format(objects_to_check):
+    
+    # Get mode options
+    active_export_mode = bpy.context.scene.other_properties.export_mode_enum
+    
     invalid_materials = set()
     
     for obj in objects_to_check:
@@ -479,7 +483,12 @@ def check_albedo_texture_format(objects_to_check):
                     texture_name = node.image.name
                     # Remove the file extension
                     texture_basename, _ = os.path.splitext(texture_name)
-                    mat_name = mat.name + "_A"
+                    
+                    mat_name = mat.name
+                    
+                    if active_export_mode == 'OP1':
+                        mat_name = mat.name + "_A"
+                        
                     if texture_basename != mat_name:
                         invalid_materials.add(mat.name)
 
