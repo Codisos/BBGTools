@@ -1365,6 +1365,67 @@ def LODGroupsUnregister():
 #---------------------------------------------------
 # /LOD Groups
 #---------------------------------------------------
+
+#---------------------------------------------------
+# OUTLINER
+#---------------------------------------------------
+
+class OutlinerDesignCollectionCreator(bpy.types.Operator):
+    """Adds Collections for designers"""
+    bl_idname = "object.outliner_add_design"
+    bl_label = "Add design collections"
+
+    def execute(self, context):
+        make_design_collections(self)
+        
+        return {'FINISHED'}
+
+def make_design_collections(self):
+    
+    scene = bpy.context.scene
+
+    # Create design collection
+    design_collection = bpy.data.collections.new("Design")
+    scene.collection.children.link(design_collection)
+    
+    # Create hands collection
+    hands_collection = bpy.data.collections.new("Hands")
+    scene.collection.children.link(hands_collection)
+    
+    # Create enviro collection
+    enviro_collection = bpy.data.collections.new("Enviro")
+    scene.collection.children.link(enviro_collection)
+
+    # Create pr,pa,un
+    pr = bpy.data.collections.new("PR")
+    pa = bpy.data.collections.new("PA")
+    un = bpy.data.collections.new("UN")
+
+    # Link subcollections to the main collection
+    design_collection.children.link(pr)
+    design_collection.children.link(pa)
+    design_collection.children.link(un)
+        
+    self.report({'INFO'}, "Collections created")
+
+
+# Right-click menu
+def add_design_option_to_outliner_menu(self, context):
+    self.layout.separator()
+    self.layout.operator(OutlinerDesignCollectionCreator.bl_idname, icon='PLUS')
+
+def AddCollectionsRegister():
+    bpy.utils.register_class(OutlinerDesignCollectionCreator)
+    bpy.types.OUTLINER_MT_context_menu.append(add_design_option_to_outliner_menu)
+
+def AddCollectionsUnregister():
+    bpy.utils.unregister_class(OutlinerDesignCollectionCreator)
+    bpy.types.OUTLINER_MT_context_menu.remove(add_design_option_to_outliner_menu)
+
+#---------------------------------------------------
+# /OUTLINER
+#---------------------------------------------------
+
 def register():
     RootCheckRegister()
     ExportWithChecksRegister()
@@ -1377,6 +1438,7 @@ def register():
     CleanMaterialsRegister()
     LodRegister()
     LODGroupsRegister()
+    AddCollectionsRegister()
     
 
 def unregister():
@@ -1391,6 +1453,7 @@ def unregister():
     CleanMaterialsUnregister()
     LodUnregister()
     LODGroupsUnregister()
+    AddCollectionsUnregister()
 
 # TURN ON IF TESTING IN BLENDER 
 #if __name__ == "__main__":
