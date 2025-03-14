@@ -1417,10 +1417,12 @@ def add_design_option_to_outliner_menu(self, context):
 def AddCollectionsRegister():
     bpy.utils.register_class(OutlinerDesignCollectionCreator)
     bpy.types.OUTLINER_MT_context_menu.append(add_design_option_to_outliner_menu)
+    bpy.types.OUTLINER_MT_collection.append(add_design_option_to_menu)
 
 def AddCollectionsUnregister():
     bpy.utils.unregister_class(OutlinerDesignCollectionCreator)
     bpy.types.OUTLINER_MT_context_menu.remove(add_design_option_to_outliner_menu)
+    bpy.types.OUTLINER_MT_collection.remove(add_design_option_to_menu)
 
 #---------------------------------------------------
 # /OUTLINER
