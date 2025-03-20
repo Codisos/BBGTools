@@ -189,6 +189,9 @@ class ExportFBXWithChecks(bpy.types.Operator):
         
         # Check if not in design mode
         active_export_mode = bpy.context.scene.other_properties.export_mode_enum
+        
+        # Mode name
+        check_mode_name = self.get_mode_for_title()
     
         if active_export_mode == 'OP3':
             self.open_fbx_export_window()
@@ -212,7 +215,7 @@ class ExportFBXWithChecks(bpy.types.Operator):
         else:
             check_messages.append("ROOT")
             check_icons.append('CANCEL')
-            self.report({'ERROR'}, f"ROOT ERROR!!!")
+            self.report({'ERROR'}, check_mode_name+ f" -ROOT ERROR!!!")
             
             
         # Get objects to check
@@ -233,7 +236,7 @@ class ExportFBXWithChecks(bpy.types.Operator):
         if invalid_materials:
             check_messages.append("MATERIALS")
             check_icons.append('CANCEL')
-            self.report({'ERROR'}, f"MATERIAL ERROR!!!")
+            self.report({'ERROR'}, check_mode_name+ f" -MATERIAL ERROR!!!")
         else:
             check_messages.append("MATERIALS")
             check_icons.append('CHECKMARK')
@@ -251,7 +254,7 @@ class ExportFBXWithChecks(bpy.types.Operator):
         if objects:
             check_messages.append("SCALES")
             check_icons.append('CANCEL')
-            self.report({'ERROR'}, f"SCALES ERROR!!!")
+            self.report({'ERROR'}, check_mode_name+ f" -SCALES ERROR!!!")
         else:
             check_messages.append("SCALES")
             check_icons.append('CHECKMARK')
@@ -278,19 +281,35 @@ class ExportFBXWithChecks(bpy.types.Operator):
             if search_for_old_objects(objects_to_check):
                 check_messages.append("_OLD")
                 check_icons.append('CANCEL')
-                self.report({'ERROR'}, f"_OLD ERROR!!!")
+                self.report({'ERROR'}, check_mode_name+ f" -_OLD ERROR!!!")
+            
                 
         
         
         # SHOW CHECK POPUP
         if not any('CANCEL' in icon for icon in check_icons):  
-            self.show_popup(check_messages, check_icons)
+            self.show_popup(check_messages, check_icons,check_mode_name)
        
         
         # Run FBX export window
         self.open_fbx_export_window()
         
         return {'FINISHED'}
+    
+    # Get mode name for Check title
+    def get_mode_for_title(self):
+            
+            active_export_mode = bpy.context.scene.other_properties.export_mode_enum
+            
+            match active_export_mode:
+                case "OP1":
+                    return "FINAL"
+                case "OP2":
+                    return "PROTOTYPE"
+                case "OP3":
+                    return "DESIGN"
+                case default:
+                    return ""
     
     # Run window with last export settings
     def open_fbx_export_window(self):
@@ -309,14 +328,20 @@ class ExportFBXWithChecks(bpy.types.Operator):
         else:
             bpy.ops.export_scene.fbx('INVOKE_DEFAULT')
     
-    def show_popup(self, check_messages,check_icons):
+    def show_popup(self, check_messages,check_icons, mode_name):
         """Show a pop-up message in Blender UI"""
+            
         def draw(self, context):
+            
             default_icon = 'INFO'  # Use a safe default
+            
             for index, message in enumerate(check_messages):
                 icon = check_icons[index] if index < len(check_icons) else default_icon
                 self.layout.label(text=message, icon=icon)
-        bpy.context.window_manager.popup_menu(draw, title="Checks")
+                
+        header_title = "Checks: " + mode_name
+                
+        bpy.context.window_manager.popup_menu(draw, title = header_title)
         
 
 # Modify the existing Export menu to include BBG operator
@@ -1460,5 +1485,5 @@ def unregister():
     
 
 # TURN ON IF TESTING IN BLENDER 
-#if __name__ == "__main__":
-#    register()
+if __name__ == "__main__":
+    register()
