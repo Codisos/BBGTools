@@ -801,23 +801,15 @@ class AnimationsPanel(bpy.types.Panel):
     bl_idname = "panel_animations"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    #bl_context = "object"
     bl_category = 'BBG'
     bl_options = {"DEFAULT_CLOSED"}
     
     
     def draw(self, context):
-        box = self.layout.box()
-        box.label(text="MERGE ANIMATIONS")
-        box.prop(context.scene, "target", text="Target")
-        box.prop(context.scene, "animations", text="Animations")
-        box.operator("wm.merge_animations", text="Move Animations to Target")
         
+        # Static animations
         box2 = self.layout.box()
-        box2.label(text="OTHER")
-        
         staticrow = box2.row().split(factor = 0.6, align=True)
-        #box2.operator("wm.merge_animations", text="STATIC", icon="BOOKMARKS")
         
         #label
         staticrow.label(text="Static Animation")
@@ -825,6 +817,16 @@ class AnimationsPanel(bpy.types.Panel):
         staticrow.operator("wm.mark_static_ani", text="", icon='BOOKMARKS')
         # select button
         staticrow.operator("wm.select_static_ani", text="", icon='RESTRICT_SELECT_OFF')
+        
+        # Merge animations
+        box = self.layout.box()
+        box.label(text="MERGE ANIMATIONS")
+        box.prop(context.scene, "target", text="Target")
+        box.prop(context.scene, "animations", text="Animations")
+        box.operator("wm.merge_animations", text="Move Animations to Target")
+        
+       
+        
 
 #---------------------------------------------------
 # /Animations
@@ -934,7 +936,56 @@ class MarkStaticAnimations(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
     
     def execute(self, context):
-    
+        
+        # Amount of shift at frame 0
+        shift_amount = 0.0001
+
+        # Iterate over all selected objects in the scene
+        for obj in context.selected_objects:
+            if obj.animation_data and obj.animation_data.action:
+                static = True 
+                
+                for fcurve in obj.animation_data.action.fcurves:
+                    if fcurve.data_path not in {"location", "rotation_euler"}:
+                        continue
+
+                    key_val_at_zero = None
+                    key_val_at_one = None
+
+                    for kp in fcurve.keyframe_points:
+                        frame = kp.co.x
+                        if abs(frame - 0) < 1e-4:
+                            key_val_at_zero = kp.co.y
+                        elif abs(frame - 1) < 1e-4:
+                            key_val_at_one = kp.co.y
+
+                    # If keyframe is missing or the values differ mark as non-static.
+                    if key_val_at_zero is None or key_val_at_one is None:
+                        
+                        static = False
+                        break
+                    if abs(key_val_at_zero - key_val_at_one) > 1e-4:
+                        
+                        static = False
+                        break
+
+                # Mark static all valid by shifting
+                if static:
+                    
+                    obj.location.x += shift_amount
+                    obj.location.y += shift_amount
+                    obj.location.z += shift_amount
+
+                    obj.rotation_euler.x += shift_amount
+                    obj.rotation_euler.y += shift_amount
+                    obj.rotation_euler.z += shift_amount
+                    
+                    # Apply changes at 0
+                    obj.keyframe_insert(data_path="location", frame=0)
+                    obj.keyframe_insert(data_path="rotation_euler", frame=0)
+                  
+        self.report({'INFO'}, f"OBJECTS MARKED")
+                    
         return {'FINISHED'}
 
 class SelectStaticAnimations(bpy.types.Operator):
@@ -948,6 +999,69 @@ class SelectStaticAnimations(bpy.types.Operator):
     
     def execute(self, context):
         
+        shift_amount = 0.0001
+        tol = 1e-7  # Tolerance for float
+        
+        bpy.ops.object.select_all(action='DESELECT')
+        
+        for obj in context.scene.objects:
+            if obj.type != 'EMPTY':
+                continue
+            
+            if not (obj.animation_data and obj.animation_data.action):
+                continue
+            
+            action = obj.animation_data.action
+            valid = True
+            
+
+            for data_path in ("location", "rotation_euler"):
+                
+                for axis in range(3):
+                    fcurve = next((fc for fc in action.fcurves 
+                                   if fc.data_path == data_path and fc.array_index == axis), None)
+                    
+                    if fcurve is None:
+                        valid = False
+                        break
+                    
+                    # Get values at 0 and 1
+                    key_val_at_zero = None
+                    key_val_at_one = None
+                    
+                    for kp in fcurve.keyframe_points:
+                        
+                        if abs(kp.co.x - 0) < tol:
+                            key_val_at_zero = kp.co.y
+                            
+                        elif abs(kp.co.x - 1) < tol:
+                            key_val_at_one = kp.co.y
+                            
+                    if key_val_at_zero is None or key_val_at_one is None:
+                        valid = False
+                        break  
+                    
+                    # Calculate the difference
+                    diff = key_val_at_one - key_val_at_zero
+                    
+                    if(diff<0):
+                        diff = diff * -1
+                        
+                    if abs(diff - shift_amount) > tol:
+                        valid = False
+                        break
+                
+                if not valid:
+                    break
+            
+            # If all channels pass the check, select the object
+            if valid:
+                obj.select_set(True)
+            else:
+                obj.select_set(False)
+        
+        self.report({'INFO'}, f"STATIC OBJECTS SELECTED")
+                
         return {'FINISHED'}
 
 #---------------------------------------------------
