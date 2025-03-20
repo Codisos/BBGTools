@@ -938,7 +938,7 @@ class MarkStaticAnimations(bpy.types.Operator):
     def execute(self, context):
         
         # Amount of shift at frame 0
-        shift_amount = 0.0001
+        shift_amount = 0.00001
 
         # Iterate over all selected objects in the scene
         for obj in context.selected_objects:
@@ -951,20 +951,45 @@ class MarkStaticAnimations(bpy.types.Operator):
 
                     key_val_at_zero = None
                     key_val_at_one = None
+                    key_val_at_end = None
+                    key_val_at_endplus = None
+                    
+                    frames = sorted(kp.co.x for kp in fcurve.keyframe_points)
+
+                    if len(frames) >= 2:
+                        end_frame = frames[-1]     
+                        endplus_frame = frames[-2]
+                    else:
+                        end_frame = None
+                        endplus_frame = None
 
                     for kp in fcurve.keyframe_points:
                         frame = kp.co.x
                         if abs(frame - 0) < 1e-4:
                             key_val_at_zero = kp.co.y
+                            
                         elif abs(frame - 1) < 1e-4:
                             key_val_at_one = kp.co.y
+                            
+                        elif end_frame is not None and abs(frame - end_frame) < 1e-4:
+                            key_val_at_end = kp.co.y
+                            
+                        elif endplus_frame is not None and abs(frame - endplus_frame) < 1e-4:
+                            key_val_at_endplus = kp.co.y
+                            
 
                     # If keyframe is missing or the values differ mark as non-static.
-                    if key_val_at_zero is None or key_val_at_one is None:
+                    if key_val_at_zero is None or key_val_at_one is None or key_val_at_end is None or key_val_at_endplus is None:
                         
                         static = False
                         break
+                    
                     if abs(key_val_at_zero - key_val_at_one) > 1e-4:
+                        
+                        static = False
+                        break
+                    
+                    if abs(key_val_at_end - key_val_at_endplus) > 1e-4:
                         
                         static = False
                         break
@@ -983,6 +1008,8 @@ class MarkStaticAnimations(bpy.types.Operator):
                     # Apply changes at 0
                     obj.keyframe_insert(data_path="location", frame=0)
                     obj.keyframe_insert(data_path="rotation_euler", frame=0)
+                    obj.keyframe_insert(data_path="location", frame=end_frame)
+                    obj.keyframe_insert(data_path="rotation_euler", frame=end_frame)
                   
         self.report({'INFO'}, f"OBJECTS MARKED")
                     
@@ -999,7 +1026,7 @@ class SelectStaticAnimations(bpy.types.Operator):
     
     def execute(self, context):
         
-        shift_amount = 0.0001
+        shift_amount = 0.00001
         tol = 1e-7  # Tolerance for float
         
         bpy.ops.object.select_all(action='DESELECT')
