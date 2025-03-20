@@ -798,16 +798,13 @@ def UVMapsRenameUnregister():
 # /UVMapsRename
 #---------------------------------------------------
 
-
 #---------------------------------------------------
-# MergeAnimations
+# Animations
 #---------------------------------------------------
-#Moves animation_data.action from Animations to Target with the same name, ignoring the .00x suffix. 
-#must import re
 
-class MergeAnimationsPanel(bpy.types.Panel):
-    bl_label = "Merge Animations"
-    bl_idname = "merge_animations"
+class AnimationsPanel(bpy.types.Panel):
+    bl_label = "Animations"
+    bl_idname = "panel_animations"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     #bl_context = "object"
@@ -817,9 +814,33 @@ class MergeAnimationsPanel(bpy.types.Panel):
     
     def draw(self, context):
         box = self.layout.box()
+        box.label(text="MERGE ANIMATIONS")
         box.prop(context.scene, "target", text="Target")
         box.prop(context.scene, "animations", text="Animations")
         box.operator("wm.merge_animations", text="Move Animations to Target")
+        
+        box2 = self.layout.box()
+        box2.label(text="OTHER")
+        
+        staticrow = box2.row().split(factor = 0.6, align=True)
+        #box2.operator("wm.merge_animations", text="STATIC", icon="BOOKMARKS")
+        
+        #label
+        staticrow.label(text="Static Animation")
+        # mark button
+        staticrow.operator("wm.merge_animations", text="", icon='BOOKMARKS')
+        # select button
+        staticrow.operator("wm.merge_animations", text="", icon='RESTRICT_SELECT_OFF')
+
+#---------------------------------------------------
+# /Animations
+#---------------------------------------------------
+
+#---------------------------------------------------
+# MergeAnimations
+#---------------------------------------------------
+#Moves animation_data.action from Animations to Target with the same name, ignoring the .00x suffix. 
+#must import re
 
 
 class MergeAnimations(bpy.types.Operator):
@@ -902,14 +923,14 @@ class MergeAnimations(bpy.types.Operator):
 
 
 def MergeAnimationsRegister():
-    bpy.utils.register_class(MergeAnimationsPanel)
+    bpy.utils.register_class(AnimationsPanel)
     bpy.utils.register_class(MergeAnimations)
 
     bpy.types.Scene.target = bpy.props.PointerProperty(type=bpy.types.Object)
     bpy.types.Scene.animations = bpy.props.PointerProperty(type=bpy.types.Object)
 
 def MergeAnimationsUnregister():
-    bpy.utils.unregister_class(MergeAnimationsPanel)
+    bpy.utils.unregister_class(AnimationsPanel)
     bpy.utils.unregister_class(MergeAnimations)
 
     del bpy.types.Scene.target
@@ -1485,5 +1506,5 @@ def unregister():
     
 
 # TURN ON IF TESTING IN BLENDER 
-#if __name__ == "__main__":
-#    register()
+if __name__ == "__main__":
+    register()
