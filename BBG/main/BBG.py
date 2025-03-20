@@ -150,8 +150,8 @@ class CheckPanel(bpy.types.Panel):
         boxMaterials = layout.box()
         boxMaterials.label(text="MATERIALS")
         boxMaterials.row().operator("wm.clean_materials", text="Clean Materials")
-        boxMaterials.row().operator("object.format_check", text="Material Check")
-        boxMaterials.row().operator("object.texture_format_check", text="Texture Check")
+        boxMaterials.row().operator("wm.format_check", text="Material Check")
+        boxMaterials.row().operator("wm.texture_format_check", text="Texture Check")
         
         #OTHER/settings BOX "header"
         other_props = context.scene.other_properties
@@ -522,7 +522,7 @@ def check_albedo_texture_format(objects_to_check):
 
 class FormatCheck(bpy.types.Operator):
     """Check material name format for all visible or selected objects"""
-    bl_idname = "object.format_check"
+    bl_idname = "wm.format_check"
     bl_label = "Check Material Format"
 
     def execute(self, context):
@@ -558,7 +558,7 @@ class FormatCheck(bpy.types.Operator):
         
 class TextureFormatCheck(bpy.types.Operator):
     """Check materials texture name for all visible or selected objects"""
-    bl_idname = "object.texture_format_check"
+    bl_idname = "wm.texture_format_check"
     bl_label = "Check Materials Texture Format"
 
     def execute(self, context):
@@ -590,20 +590,14 @@ class TextureFormatCheck(bpy.types.Operator):
         bpy.context.window_manager.popup_menu(draw, title="Format Check", icon=icon)
 
 
-def menu_func(self, context):
-    self.layout.operator(FormatCheck.bl_idname)
-
-
 def FormatCheckRegister():
     bpy.utils.register_class(FormatCheck)
     bpy.utils.register_class(TextureFormatCheck)
-    bpy.types.VIEW3D_MT_object.append(menu_func)
 
 
 def FormatCheckUnregister():
     bpy.utils.unregister_class(FormatCheck)
     bpy.utils.unregister_class(TextureFormatCheck)
-    bpy.types.VIEW3D_MT_object.remove(menu_func)
 
 
 #---------------------------------------------------
@@ -828,9 +822,9 @@ class AnimationsPanel(bpy.types.Panel):
         #label
         staticrow.label(text="Static Animation")
         # mark button
-        staticrow.operator("wm.merge_animations", text="", icon='BOOKMARKS')
+        staticrow.operator("wm.mark_static_ani", text="", icon='BOOKMARKS')
         # select button
-        staticrow.operator("wm.merge_animations", text="", icon='RESTRICT_SELECT_OFF')
+        staticrow.operator("wm.select_static_ani", text="", icon='RESTRICT_SELECT_OFF')
 
 #---------------------------------------------------
 # /Animations
@@ -921,10 +915,56 @@ class MergeAnimations(bpy.types.Operator):
 
         return {'FINISHED'}
 
+#---------------------------------------------------
+# /MergeAnimations
+#---------------------------------------------------
+
+
+#---------------------------------------------------
+# StaticAnimations
+#---------------------------------------------------
+
+class MarkStaticAnimations(bpy.types.Operator):
+    """Mark selected animated objects as static"""
+    bl_label = "Mark Static"
+    bl_idname = "wm.mark_static_ani"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'BBG'
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+    
+        return {'FINISHED'}
+
+class SelectStaticAnimations(bpy.types.Operator):
+    """Select all animated objects marked as static"""
+    bl_label = "Select Static"
+    bl_idname = "wm.select_static_ani"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'BBG'
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        
+        return {'FINISHED'}
+
+#---------------------------------------------------
+# /StaticAnimations
+#---------------------------------------------------
+
+
+
+#---------------------------------------------------
+# ANI regiseter
+#---------------------------------------------------
 
 def MergeAnimationsRegister():
     bpy.utils.register_class(AnimationsPanel)
     bpy.utils.register_class(MergeAnimations)
+    bpy.utils.register_class(MarkStaticAnimations)
+    bpy.utils.register_class(SelectStaticAnimations)
 
     bpy.types.Scene.target = bpy.props.PointerProperty(type=bpy.types.Object)
     bpy.types.Scene.animations = bpy.props.PointerProperty(type=bpy.types.Object)
@@ -932,13 +972,16 @@ def MergeAnimationsRegister():
 def MergeAnimationsUnregister():
     bpy.utils.unregister_class(AnimationsPanel)
     bpy.utils.unregister_class(MergeAnimations)
+    bpy.utils.unregister_class(MarkStaticAnimations)
+    bpy.utils.unregister_class(SelectStaticAnimations)
 
     del bpy.types.Scene.target
     del bpy.types.Scene.animations
+    
+#---------------------------------------------------
+# /ANI regiseter
+#---------------------------------------------------
 
-#---------------------------------------------------
-# /MergeAnimations
-#---------------------------------------------------
 
 
 #---------------------------------------------------
