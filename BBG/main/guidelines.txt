@@ -54,6 +54,8 @@ EXAMPLES:
 ------------------ Animations --------------
 RULE:
     ANI_HOMEDIR_ModelName_SCOPE_XXX1
+- Double keyframes at START and END
+- Mark static objects
 
 EXAMPLES: 
     ANI_STREET_Barrel_UN_XXX1.fbx
