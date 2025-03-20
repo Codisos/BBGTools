@@ -994,20 +994,39 @@ class MarkStaticAnimations(bpy.types.Operator):
                         static = False
                         break
 
-                # Mark static all valid by shifting
+                # Mark static all valid by shifting (shift is based on orig keyframe locrots)
                 if static:
-                    
-                    obj.location.x += shift_amount
-                    obj.location.y += shift_amount
-                    obj.location.z += shift_amount
+                    # Get location & rotation at frame 1
+                    obj.location = obj.animation_data.action.fcurves[0].evaluate(1), \
+                                   obj.animation_data.action.fcurves[1].evaluate(1), \
+                                   obj.animation_data.action.fcurves[2].evaluate(1)
 
-                    obj.rotation_euler.x += shift_amount
-                    obj.rotation_euler.y += shift_amount
-                    obj.rotation_euler.z += shift_amount
-                    
-                    # Apply changes at 0
+                    obj.rotation_euler = obj.animation_data.action.fcurves[3].evaluate(1), \
+                                         obj.animation_data.action.fcurves[4].evaluate(1), \
+                                         obj.animation_data.action.fcurves[5].evaluate(1)
+
+                    # Apply shift
+                    obj.location = (obj.location[0] + shift_amount, obj.location[1] + shift_amount, obj.location[2] + shift_amount)
+                    obj.rotation_euler = (obj.rotation_euler[0] + shift_amount, obj.rotation_euler[1] + shift_amount, obj.rotation_euler[2] + shift_amount)
+
+                    # Insert modified keyframe at frame 0
                     obj.keyframe_insert(data_path="location", frame=0)
                     obj.keyframe_insert(data_path="rotation_euler", frame=0)
+
+                    # Get location & rotation at endplus_frame
+                    obj.location = obj.animation_data.action.fcurves[0].evaluate(endplus_frame), \
+                                   obj.animation_data.action.fcurves[1].evaluate(endplus_frame), \
+                                   obj.animation_data.action.fcurves[2].evaluate(endplus_frame)
+
+                    obj.rotation_euler = obj.animation_data.action.fcurves[3].evaluate(endplus_frame), \
+                                         obj.animation_data.action.fcurves[4].evaluate(endplus_frame), \
+                                         obj.animation_data.action.fcurves[5].evaluate(endplus_frame)
+
+                    # Apply shift
+                    obj.location = (obj.location[0] + shift_amount, obj.location[1] + shift_amount, obj.location[2] + shift_amount)
+                    obj.rotation_euler = (obj.rotation_euler[0] + shift_amount, obj.rotation_euler[1] + shift_amount, obj.rotation_euler[2] + shift_amount)
+
+                    # Insert modified keyframe at end_frame
                     obj.keyframe_insert(data_path="location", frame=end_frame)
                     obj.keyframe_insert(data_path="rotation_euler", frame=end_frame)
                   
