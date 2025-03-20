@@ -1663,5 +1663,5 @@ def unregister():
     
 
 # TURN ON IF TESTING IN BLENDER 
-if __name__ == "__main__":
-    register()
+#if __name__ == "__main__":
+#    register()
