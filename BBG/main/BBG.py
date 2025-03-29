@@ -1735,6 +1735,7 @@ def register():
     CleanMaterialsRegister()
     LodRegister()
     LODGroupsRegister()
+    SelectActiveMaterialInSceneRegister()
     
     
 
@@ -1751,6 +1752,7 @@ def unregister():
     CleanMaterialsUnregister()
     LodUnregister()
     LODGroupsUnregister()
+    SelectActiveMaterialInSceneUnregister()
     
 
 # TURN ON IF TESTING IN BLENDER 
