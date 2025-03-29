@@ -825,9 +825,6 @@ class AnimationsPanel(bpy.types.Panel):
         box.prop(context.scene, "animations", text="Animations")
         box.operator("wm.merge_animations", text="Move Animations to Target")
         
-       
-        
-
 #---------------------------------------------------
 # /Animations
 #---------------------------------------------------
@@ -1518,9 +1515,6 @@ class LODGroupsPanel(bpy.types.Panel):
         
         groupBox.operator("object.unhide_lod_objects", text="RESET")
         
-    
-    
-
 class LodSelectGroupOperator(bpy.types.Operator):
     """Select LOD Group"""
     bl_idname = "object.lod_groups_select"
@@ -1675,6 +1669,57 @@ def AddCollectionsUnregister():
 
 #---------------------------------------------------
 # /OUTLINER
+#---------------------------------------------------
+
+#---------------------------------------------------
+# MATERIAL SELECTOR
+#---------------------------------------------------
+
+class SelectActiveMaterialInScene(bpy.types.Operator):
+    bl_idname = "wm.select_material_in_scene"
+    bl_label = "Select Material"
+    bl_description = "Select all objects with this material in the scene"
+    
+    def execute(self, context):
+        
+        mat = context.object.active_material
+        
+        if mat:
+            select_objects_with_same_material(context.visible_objects, mat)
+        else:
+            self.report({'WARNING'}, "No active material!")
+            
+        return {'FINISHED'}
+
+def select_objects_with_same_material(objects_to_check, material_to_check):
+    """Select all objects in the scene that use the active material slot's material."""
+    
+    active_material = material_to_check
+
+    bpy.ops.object.select_all(action='DESELECT')
+
+    for check_obj in objects_to_check:
+        if check_obj.type == 'MESH':  
+            for slot in check_obj.material_slots:
+                if slot.material == active_material:
+                    check_obj.select_set(True)
+                    break  # No need to check further slots
+
+def add_select_material_button(self, context):
+    layout = self.layout
+    layout.operator_context = 'INVOKE_DEFAULT'
+    layout.operator("wm.select_material_in_scene", icon="LOOP_BACK")
+
+def SelectActiveMaterialInSceneRegister():
+    bpy.utils.register_class(SelectActiveMaterialInScene)
+    bpy.types.MATERIAL_MT_context_menu.append(add_select_material_button)
+
+def SelectActiveMaterialInSceneUnregister():
+    bpy.types.MATERIAL_MT_context_menu.remove(add_select_material_button)
+    bpy.utils.unregister_class(SelectActiveMaterialInScene)
+
+#---------------------------------------------------
+# /MATERIAL SELECTOR
 #---------------------------------------------------
 
 def register():
