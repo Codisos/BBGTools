@@ -9,7 +9,7 @@ bl_info = {
     "description": "BBG Tools",
     "author": "BBG",
     "version": (1, 1, 6),
-    "blender": (4, 2, 0),
+    "blender": (4, 2, 7),
     "location": "VIEW_3D",
 }
 
