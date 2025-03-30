@@ -1679,6 +1679,7 @@ class SelectActiveMaterialInScene(bpy.types.Operator):
     bl_idname = "wm.select_material_in_scene"
     bl_label = "Select Material"
     bl_description = "Select all objects with this material in the scene"
+    bl_options = {'REGISTER', 'UNDO'}
     
     def execute(self, context):
         
