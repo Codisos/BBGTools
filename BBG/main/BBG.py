@@ -176,6 +176,32 @@ class CheckPanel(bpy.types.Panel):
 
 
 #---------------------------------------------------
+# Export Check (Custom Window)
+#---------------------------------------------------
+
+class ExportChecksWindowPanel(bpy.types.Panel):
+    """Export FBX Checks"""
+    bl_label = "Checks"
+    bl_idname = "export_window_custom_panel"
+    bl_space_type = "FILE_BROWSER"
+    bl_region_type = "TOOL_PROPS" #right side
+    bl_category = "Export" 
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.active_operator and context.space_data.active_operator.bl_idname == "EXPORT_SCENE_OT_fbx"
+
+    def draw(self, context):
+        box = self.layout.box()
+        
+        box.operator("export_scene.fbx_with_count", text="Run Checks")
+
+#---------------------------------------------------
+# /Export Check (Custom Window)
+#---------------------------------------------------
+
+
+#---------------------------------------------------
 # Export Check (Custom Export)
 #---------------------------------------------------
 # Adds a custom Export FBX button and checks basic stuff (Root,Scale,Format)
@@ -289,10 +315,12 @@ class ExportFBXWithChecks(bpy.types.Operator):
         # SHOW CHECK POPUP
         if not any('CANCEL' in icon for icon in check_icons):  
             self.show_popup(check_messages, check_icons,check_mode_name)
+            self.report({'INFO'}, f"CHECKS OK")
        
         
         # Run FBX export window
-        self.open_fbx_export_window()
+        if not is_export_window_open():
+            self.open_fbx_export_window()
         
         return {'FINISHED'}
     
@@ -342,7 +370,15 @@ class ExportFBXWithChecks(bpy.types.Operator):
         header_title = "Checks: " + mode_name
                 
         bpy.context.window_manager.popup_menu(draw, title = header_title)
+     
         
+# Returns True if the FBX export window is open
+def is_export_window_open():
+    for window in bpy.context.window_manager.windows:
+        for area in window.screen.areas:
+            if area.type == 'FILE_BROWSER':  # Export window is a file browser
+                return True
+    return False
 
 # Modify the existing Export menu to include BBG operator
 def menu_func_export(self, context):
@@ -350,10 +386,12 @@ def menu_func_export(self, context):
 
 def ExportWithChecksRegister():
     bpy.utils.register_class(ExportFBXWithChecks)
+    bpy.utils.register_class(ExportChecksWindowPanel)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
     
 def ExportWithChecksUnregister():
     bpy.utils.unregister_class(ExportFBXWithChecks)
+    bpy.utils.unregister_class(ExportChecksWindowPanel)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
 
 #---------------------------------------------------
