@@ -15,3 +15,5 @@ class PieMenuBBGChecks(Menu):
         pie.operator("wm.format_check", text="Material Check", icon='MATERIAL')
         pie.operator("wm.texture_format_check", text="Texture Check", icon='TEXTURE')        
         
+
+#register from preferences init
