@@ -152,15 +152,20 @@ class CheckPanel(bpy.types.Panel):
         boxScale = layout.box()
         boxScale.label(text="SCALE")
         rowScale = boxScale.row() 
-        rowScale.operator("object.check_scales", text="Check Scales")
+        rowScale.operator("object.check_scales", text="Scale Check")
         
         #MATERIALS BOX
         boxMaterials = layout.box()
         boxMaterials.label(text="MATERIALS")
-        boxMaterials.row().operator("wm.clean_materials", text="Clean Materials")
         boxMaterials.row().operator("wm.format_check", text="Material Check")
         boxMaterials.row().operator("wm.texture_format_check", text="Texture Check")
         
+        #CLEAN BOX
+        boxClean = layout.box()
+        boxClean.label(text="CLEAN")
+        boxClean.row().operator("wm.clean_materials", text="Clean Materials")
+        boxClean.row().operator("wm.clean_textures", text="Clean Textures")
+
         #OTHER/settings BOX "header"
         other_props = context.scene.other_properties
         layout.row().prop(other_props, "show_collapse", text="SETTINGS", icon="TRIA_DOWN" if other_props.show_collapse else "TRIA_RIGHT", emboss=False)
@@ -174,8 +179,6 @@ class CheckPanel(bpy.types.Panel):
             boxOther.row().prop(context.scene.other_properties, "custom_collider_name", text="Material Name")
             boxOther.row().prop(context.scene, "include_name_MATERIAL", text="Include \"Material\"")
             #rowOther.operator("object.check_normals", text="Check Normals")
-        
-        #PIVOT BOX
 
 
 #---------------------------------------------------
@@ -1205,6 +1208,8 @@ class CleanMaterials(ObjectModeOnlyOperator):
 
 
     def execute(self, context):
+        replaced_count = 0
+
         include_name_MATERIAL = context.scene.include_name_MATERIAL
         
         ColliderMaterial_name = bpy.context.scene.other_properties.custom_collider_name
@@ -1265,6 +1270,9 @@ class CleanMaterials(ObjectModeOnlyOperator):
         for mat in bpy.data.materials:
             if mat not in cleanMaterials:
                 bpy.data.materials.remove(mat)
+                replaced_count += 1
+
+        self.report({'INFO'}, f"{replaced_count} Materials Replaced")
 
         return {'FINISHED'}
 
@@ -1281,6 +1289,63 @@ def CleanMaterialsUnregister():
 
 #---------------------------------------------------
 # /CleanMaterials
+#---------------------------------------------------
+
+
+#---------------------------------------------------
+# CleanTextures
+#---------------------------------------------------
+#On all objects, cleans materials with the same name. Remove Collider Tools material
+#must import re
+
+class CleanTextures(ObjectModeOnlyOperator):
+    """Remove all material duplicates and COL materials in Scene"""
+    bl_label = "Clean Textures"
+    bl_idname = "wm.clean_textures"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    #bl_context = "material"
+    bl_category = 'BBG'
+    bl_options = {'REGISTER', 'UNDO'}
+
+
+    def execute(self, context):
+        replaced_count = 0
+
+        for obj in bpy.data.objects:
+            if obj.type != 'MESH':
+                continue
+            
+            if obj.data.materials:
+                for mat in obj.data.materials:
+                    if mat and mat.node_tree:
+                        for node in mat.node_tree.nodes:
+                            if node.type == 'TEX_IMAGE' and node.image:
+                                image = node.image
+                                
+                                # Check if name has a suffix (.001, .002, etc.)
+                                match = re.match(r"(.+)\.\d{3}$", image.name)
+                                if match:
+                                    base_name = match.group(1)  # Extract base name
+
+                                    # Check if a texture with the base name exists
+                                    if base_name in bpy.data.images:
+                                        node.image = bpy.data.images[base_name]  # Replace texture
+                                        replaced_count += 1
+
+        self.report({'INFO'}, f"{replaced_count} Textures Replaced")
+
+        return {'FINISHED'}
+
+
+def CleanTexturesRegister():
+    bpy.utils.register_class(CleanTextures)
+
+def CleanTexturesUnregister():
+    bpy.utils.unregister_class(CleanTextures)
+
+#---------------------------------------------------
+# /CleanTextures
 #---------------------------------------------------
 
 
@@ -1780,6 +1845,7 @@ def register():
     UVMapsRenameRegister()
     MergeAnimationsRegister()
     CleanMaterialsRegister()
+    CleanTexturesRegister()
     LodRegister()
     LODGroupsRegister()
     SelectActiveMaterialInSceneRegister()
@@ -1797,6 +1863,7 @@ def unregister():
     UVMapsRenameUnregister()
     MergeAnimationsUnregister()
     CleanMaterialsUnregister()
+    CleanTexturesUnregister()
     LodUnregister()
     LODGroupsUnregister()
     SelectActiveMaterialInSceneUnregister()

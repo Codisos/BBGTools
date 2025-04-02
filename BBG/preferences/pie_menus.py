@@ -12,6 +12,7 @@ class PieMenuBBGChecks(Menu):
         pie = layout.menu_pie()
         pie.operator("object.check_scales", text="Scale Check", icon='ORIENTATION_LOCAL')
         pie.operator("wm.clean_materials", text="Clean Materials", icon= 'BRUSH_DATA')
+        pie.operator("wm.clean_textures", text="Clean Textures", icon= 'BRUSH_DATA')
         pie.operator("wm.format_check", text="Material Check", icon='MATERIAL')
         pie.operator("wm.texture_format_check", text="Texture Check", icon='TEXTURE')        
         
