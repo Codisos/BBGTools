@@ -8,6 +8,14 @@ import pathlib
 import os
 
 
+#----------------OBJECT MODE ONLY--------------------------
+class ObjectModeOnlyOperator(bpy.types.Operator):
+    """Base class to restrict execution to Object Mode"""
+    
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None and context.object.mode == 'OBJECT'
+
 #---------------------------------------------------
 # COLLIDER MATERIAL NAME
 #---------------------------------------------------
@@ -371,7 +379,7 @@ class ExportFBXWithChecks(bpy.types.Operator):
                 
         bpy.context.window_manager.popup_menu(draw, title = header_title)
      
-        
+
 # Returns True if the FBX export window is open
 def is_export_window_open():
     for window in bpy.context.window_manager.windows:
@@ -402,7 +410,7 @@ def ExportWithChecksUnregister():
 #---------------------------------------------------
 # Scale Checks
 #---------------------------------------------------
-class CheckScalesOperator(bpy.types.Operator):
+class CheckScalesOperator(ObjectModeOnlyOperator):
     """Checks scales of visible or selected objects (selects anomalies)"""
     bl_idname = "object.check_scales"
     bl_label = "Check Scales"
@@ -558,7 +566,7 @@ def check_albedo_texture_format(objects_to_check):
     return invalid_materials
 
 
-class FormatCheck(bpy.types.Operator):
+class FormatCheck(ObjectModeOnlyOperator):
     """Check material name format for all visible or selected objects"""
     bl_idname = "wm.format_check"
     bl_label = "Check Material Format"
@@ -594,7 +602,7 @@ class FormatCheck(bpy.types.Operator):
         bpy.context.window_manager.popup_menu(draw, title="Format Check", icon=icon)
       
         
-class TextureFormatCheck(bpy.types.Operator):
+class TextureFormatCheck(ObjectModeOnlyOperator):
     """Check materials texture name for all visible or selected objects"""
     bl_idname = "wm.texture_format_check"
     bl_label = "Check Materials Texture Format"
@@ -1185,7 +1193,7 @@ def MergeAnimationsUnregister():
 #On all objects, cleans materials with the same name. Remove Collider Tools material
 #must import re
 
-class CleanMaterials(bpy.types.Operator):
+class CleanMaterials(ObjectModeOnlyOperator):
     """Remove all material duplicates and COL materials in Scene"""
     bl_label = "Clean Materials"
     bl_idname = "wm.clean_materials"
@@ -1713,7 +1721,7 @@ def AddCollectionsUnregister():
 # MATERIAL SELECTOR
 #---------------------------------------------------
 
-class SelectActiveMaterialInScene(bpy.types.Operator):
+class SelectActiveMaterialInScene(ObjectModeOnlyOperator):
     bl_idname = "wm.select_material_in_scene"
     bl_label = "Select Material"
     bl_description = "Select all objects with this material in the scene"
