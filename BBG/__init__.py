@@ -8,7 +8,7 @@ bl_info = {
     "name": "BBG",
     "description": "BBG Tools",
     "author": "BBG",
-    "version": (1, 1, 6),
+    "version": (1, 1, 7),
     "blender": (4, 2, 7),
     "location": "VIEW_3D",
 }
@@ -20,7 +20,8 @@ if script_path not in sys.path:
 
 # All modules here
 module_names = [
-    ('.main.BBG', 'BBG')
+    ('.main.BBG', 'BBG'),
+    ('.preferences','BBG')
 ]
 
 def register():
