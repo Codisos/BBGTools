@@ -51,7 +51,7 @@ EXAMPLES:
     Wall_PROTOTYPE.tga
     GEN_Barrel_JK_S.tga
 
------------------- Animations --------------
+--------------- Animations ----------------
 RULE:
     ANI_HOMEDIR_ModelName_SCOPE_XXX1
 - Double keyframes at START and END
@@ -61,6 +61,15 @@ EXAMPLES:
     ANI_STREET_Barrel_UN_XXX1.fbx
     ANI_STREET_Barrel_UN_XXX2.fbx
     ANI_GEN_House_UN_XXX1.fbx
+
+----------------- PROPS -------------------
+RULE:
+	CHAPTER_PropStone1_SCOPE
+-include "Prop" in the name
+
+EXAMPLES: 
+    SEWERS_PropStone_UN.fbx
+    TOWER_PropLantern_PR.fbx
     
 -------------- PLACEHOLDERS ----------------
 RULE Name in hierachy: 
@@ -75,3 +84,4 @@ If we need multiple objects on the same level:
     PH_STREET_Rock_XXX1
     PH_STREET_Rock_XXX2
     PH_STREET_Rock_XXX3
+
